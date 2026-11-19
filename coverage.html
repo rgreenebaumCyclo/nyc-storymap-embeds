@@ -36,13 +36,15 @@ const rgb=(()=>{const c=(Q.get('color')||'2f8cff');return[parseInt(c.slice(0,2),
 const SX=x=>(x-v.cx)*v.s+W/2,SY=y=>H/2-(y-v.cy)*v.s;
 function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR}
 function fit(){const wide=W/H>1.3;fitS=Math.min((wide?W*.62:W)/(B.x1-B.x0),(H-(wide?70:130))/(B.y1-B.y0))*1.0;v.s=fitS;v.cx=(B.x0+B.x1)/2-(wide?W*.09:0)/v.s;v.cy=(B.y0+B.y1)/2-(wide?0:H*.03)/v.s}
-let lastCount=0;
+let lastCount=0,bl=document.createElement('canvas');
+function bloom(){const w=Math.max(8,cv.width>>2),h=Math.max(8,cv.height>>2);if(bl.width!==w||bl.height!==h){bl.width=w;bl.height=h}const b=bl.getContext('2d');b.clearRect(0,0,w,h);b.drawImage(cv,0,0,w,h);g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='lighter';g.globalAlpha=.5;g.filter='blur(7px)';g.drawImage(bl,0,0,cv.width,cv.height);g.restore()}
 function render(){
- g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,W,H);g.globalCompositeOperation='lighter';
+ g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,W,H);g.globalCompositeOperation='source-over';
  const C=meta.cell,px=Math.max(1.2,C*v.s*.9),yCut=B.y0+(B.y1-B.y0)*sweep,zoomK=Math.min(1,fitS/v.s*2.2),cover=Math.min(1,C*v.s*.9/1.2);let vis=0;
  for(let i=0;i<N;i++){const wy=Y[i]*C;if(wy>yCut)continue;const x=SX(X[i]*C),y=SY(wy);if(x<-6||y<-6||x>W+6||y>H+6)continue;vis+=Cn[i];
-  const n=Cn[i],a=Math.min(.7,(.16+n*.06)*(.55+.45*zoomK)*(.3+.7*cover));g.fillStyle=`rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;g.fillRect(x-px/2,y-px/2,px,px);
-  if(n>3&&cover>.8){g.fillStyle=`rgba(190,235,255,${Math.min(.55,n*.04)})`;const q=px*.55;g.fillRect(x-q/2,y-q/2,q,q)}}
+  const n=Cn[i];g.fillStyle=`rgba(${rgb[0]},${rgb[1]},${rgb[2]},.66)`;g.fillRect(x-px/2,y-px/2,px,px);
+  if(n>=6){g.fillStyle='rgba(200,236,255,'+Math.min(.4,.08+n*.012)+')';g.fillRect(x-px/2,y-px/2,px,px)}}
+ bloom();
  g.globalCompositeOperation='source-over';
  if(sweep<1){const y=SY(yCut);const gr=g.createLinearGradient(0,y,0,y+90);gr.addColorStop(0,'rgba(127,208,255,.35)');gr.addColorStop(1,'rgba(127,208,255,0)');g.fillStyle=gr;g.fillRect(0,y,W,90);g.fillStyle='rgba(180,230,255,.9)';g.fillRect(0,y,W,1.5)}
  labs();
