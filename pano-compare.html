@@ -64,7 +64,7 @@ gl.uniform1i(U('A'),0);gl.uniform1i(U('B'),1);
 const load=src=>new Promise((ok,bad)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>ok(i);i.onerror=()=>bad(new Error('load '+src));i.src=src});
 
 /* ---- view state ---- */
-const rad=Math.PI/180,FLOOR=+(Q.get('floor')||-24);   // lowest latitude ever on screen (hides hood / grey nadir)
+const rad=Math.PI/180,FLOOR=+(Q.get('floor')||-30);   // lowest latitude ever on screen (hides hood / grey nadir)
 let yaw=0,pitch=0,fov=70,split=.5,off=0,vy=0,vp=0,W,H,dirty=true,pairs=[],cur=0,swap=Q.get('swap')==='1';
 const asp=()=>(W&&H)?W/H:1.5,vf=()=>asp()<1?2*Math.atan(Math.tan(fov*rad/2)/asp())/rad:fov;   // fov applies to the short side
 const clampPitch=()=>{const V=vf(),lo=FLOOR+V/2,hi=82-V/2;pitch=Math.max(lo,Math.min(Math.max(lo,hi),pitch))};
