@@ -13,6 +13,7 @@ iframe{width:100%;height:520px;border:1px solid var(--line);border-radius:14px;b
 const W=[
 ['coverage.html','Glow map · 2026 coverage','Every street-level image captured in 2026 lit up across the five boroughs. South-to-north reveal, pan and zoom, borough fly-to buttons, and a live count of images in view.','','Params: title, eyebrow, sub, sweep=0, color (hex, no #), fly=0 (hide borough buttons)',600],
 ['stats.html','Animated stat strip','Count-up numbers. Edit the defaults to the figures you want to publish.','','Params: items=1.8M+:Images in 2026;5:Boroughs, dur (ms)',170],
+['insights.html','Product families explorer','Interactive map of Cyclomedia product families and the 50 data insights inside them. Auto-cycles, click any family, or search across every insight.','','Params: family=road-safety, auto=0 (stop auto-cycle), title, eyebrow',640],
 ['pano-compare.html','360° then-and-now swipe viewer','Look around a full 360° scene while swiping between two captures of the same corner. Distortion-free perspective view; the grey nadir and vehicle hood are never shown.','','Params: yaw, pitch, fov, pos, off (align older image, degrees), swap=1, la, lb, a, b (360 image URLs). Pairs live in data/pano-pairs.json',620],
 ['compare.html','Then and now slider','Drag to compare an older and a newer image of the same street. Supports several locations with tabs, fed from data/pairs.json.','','Params: a, b (image URLs), la, lb (labels), title, caption, pos (0-100)',520]];
 const base=location.href.replace(/[^/]*$/,'');

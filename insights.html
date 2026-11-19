@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cyclomedia Product Families</title>
+<link rel="stylesheet" href="base.css">
+<style>
+html,body{overflow:auto;height:auto;min-height:100%}
+body{background:radial-gradient(120% 90% at 20% 0%,#0d2b4d 0%,#06182c 55%,#041021 100%)}
+#app{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:8px 28px;max-width:1240px;margin:0 auto;padding:28px clamp(16px,3vw,36px) 28px;min-height:100vh;align-content:center}
+@media(max-width:860px){#app{grid-template-columns:1fr;padding-top:20px}}
+header{grid-column:1/-1;display:flex;gap:28px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:clamp(24px,3.6vw,38px);letter-spacing:-.025em;line-height:1.08}
+h1 span{background:linear-gradient(90deg,#fff,#7fd0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.intro{color:#b8c9db;max-width:600px;margin-top:10px;font-size:14px;line-height:1.55}
+.intro b{color:#fff;font-weight:600}
+#stats{display:flex;gap:26px}
+.st b{display:block;font-size:clamp(28px,4vw,44px);font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.st span{font-size:12px;color:var(--mut);letter-spacing:.06em}
+/* orbit */
+#orbitWrap{position:relative;aspect-ratio:1/1;max-height:640px;width:100%;margin:0 auto}
+#svg{width:100%;height:100%;display:block;overflow:visible}
+.node{cursor:pointer;outline:none}
+.node .disc{transition:all .35s cubic-bezier(.2,.8,.2,1);transform-box:fill-box;transform-origin:center}
+.node .lbl{font-size:16px;font-weight:600;fill:#cfe0f1;text-anchor:middle;pointer-events:none;transition:.3s}
+.node .cnt{font-size:13px;fill:#7f97ae;text-anchor:middle;pointer-events:none}
+.node.dim{opacity:.38}.node.sel .lbl{fill:#fff}
+.node:hover .disc,.node:focus-visible .disc{filter:brightness(1.25)}
+.badge{pointer-events:none}
+.link{stroke-width:1.5;fill:none;stroke-dasharray:3 7;animation:flow 2.4s linear infinite;opacity:.55;transition:.3s}
+.link.dim{opacity:.12}.link.sel{opacity:1;stroke-width:2.2}
+@keyframes flow{to{stroke-dashoffset:-20}}
+.ring{fill:none;stroke:rgba(127,208,255,.14);stroke-width:1}
+.pulse{fill:none;stroke:rgba(127,208,255,.35);stroke-width:1.4;animation:pulse 3.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{0%{transform:scale(.55);opacity:.8}100%{transform:scale(1.9);opacity:0}}
+#hubT{font-size:12px;letter-spacing:.14em;fill:#fff;text-anchor:middle;font-weight:700}
+#hubS{font-size:10px;letter-spacing:.12em;fill:#8ea5bc;text-anchor:middle}
+/* panel */
+#panel{padding:22px 22px 20px;display:flex;flex-direction:column;gap:14px;min-height:430px;align-self:center}
+#search{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:999px;padding:0 14px;height:38px}
+#search:focus-within{border-color:rgba(127,208,255,.6)}
+#search input{flex:1;background:transparent;border:0;outline:0;color:#fff;font:inherit;min-width:0}
+#search input::placeholder{color:#7f97ae}
+#phead{display:flex;align-items:center;gap:14px}
+#picon{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;flex:none;transition:.3s}
+#picon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#pname{font-size:21px;font-weight:700;letter-spacing:-.015em;line-height:1.15}
+#pcount{font-size:12px;color:var(--mut);margin-top:2px}
+#bar{height:3px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden}#bar i{display:block;height:100%;width:0;border-radius:9px;transition:width 4.5s linear,background .3s}
+#chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:11px;background:rgba(255,255,255,.055);border:1px solid var(--line);font-size:13.5px;color:#e8f1fa;opacity:0;transform:translateY(8px);animation:in .45s cubic-bezier(.2,.8,.2,1) forwards;transition:background .2s,border-color .2s,transform .2s}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:none}
+.chip:hover{background:rgba(255,255,255,.12);border-color:var(--c);transform:translateY(-2px)}
+.chip small{font-size:10.5px;color:#8ea5bc;margin-left:2px}
+@keyframes in{to{opacity:1;transform:none}}
+#nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+#nav button{width:9px;height:9px;padding:0;border-radius:50%;border:0;background:rgba(255,255,255,.22);transition:.25s}
+#nav button.on{width:26px;border-radius:9px;background:var(--c)}
+#note{font-size:11.5px;color:#7f97ae}
+.mobileOnly{display:none}
+</style></head><body>
+<div id="app">
+ <header>
+  <div><div class="eyebrow" id="eyebrow">Product and insights</div><h1 id="title"><span>One street-level capture.</span> Seven product families.</h1>
+   <p class="intro">Building on its core data insight offerings, Cyclomedia provides a comprehensive suite of <b>Product Families</b> designed to support a wide range of operational needs. Together, these product families give organizations a holistic, geospatially accurate view of their assets and environments, enabling better planning, compliance, and decision-making.</p></div>
+  <div id="stats"><div class="st"><b id="sF">0</b><span>PRODUCT FAMILIES</span></div><div class="st"><b id="sI">0</b><span>DATA INSIGHTS</span></div></div>
+ </header>
+ <div id="orbitWrap"><svg id="svg" viewBox="0 0 640 640" role="group" aria-label="Product families"></svg></div>
+ <section class="glass" id="panel" aria-live="polite">
+  <label id="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8ea5bc" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search insights (e.g. guardrail, sidewalk, pole)" autocomplete="off"></label>
+  <div id="phead"><div id="picon"></div><div><div id="pname"></div><div id="pcount"></div></div></div>
+  <div id="bar"><i></i></div>
+  <div id="chips"></div>
+  <div id="nav"></div>
+ </section>
+</div>
+<script>
+// Params: ?family=road-safety  &auto=0 (stop auto-cycling)  &title=…  &eyebrow=…
+const Q=new URLSearchParams(location.search),$=id=>document.getElementById(id);
+if(Q.get('title'))$('title').textContent=Q.get('title');if(Q.get('eyebrow'))$('eyebrow').textContent=Q.get('eyebrow');
+const IC={
+ infra:'<path d="M9 20v-9a3 3 0 0 1 6 0v9M7 20h10M12 8V5M9 5h6M6.5 13H9m6 0h2.5"/>',
+ pave:'<path d="M9 3 5 21M15 3l4 18M12 4v3M12 10v4M12 17v3"/>',
+ ped:'<circle cx="12" cy="4.6" r="1.9"/><path d="M12 8v6m0 0-3 7m3-7 3 7M8 11l4-3 4 3"/>',
+ road:'<rect x="8" y="2.5" width="8" height="19" rx="3"/><circle cx="12" cy="7.5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="16.5" r="1.3"/>',
+ tax:'<path d="M3 11l8-7 8 7M5 10v9h5"/><circle cx="15.5" cy="16" r="3.2"/><path d="m18 18.5 3 2.5"/>',
+ traffic:'<path d="M12 3l9 9-9 9-9-9z"/><path d="M8.5 12h7M13 9.5 15.5 12 13 14.5"/>',
+ util:'<path d="M12 3v18M6 7h12M8 11h8M3.5 9.5c3 1.6 14 1.6 17 0"/>'};
+const FAM=[
+ {id:'infrastructure',n:'Infrastructure',c:'#2f8cff',i:'infra',items:['Cabinets and Pedestals','Curb and Gutter','Drain/Catch Basin','Fire Hydrants','Manhole','Tree and Tree Line','Urban Forestry','Valves, Vaults, and Substructures','Vertical Clearance']},
+ {id:'pavement',n:'Pavement and Surfaces',c:'#a78bfa',i:'pave',items:['Area Mapping','Finished Floor Elevation','Road Surface Analysis — ASTM','RSA — PASER']},
+ {id:'pedestrian',n:'Pedestrian Safety',c:'#13c4a8',i:'ped',items:['ADA Ramps — Enhanced','Crosswalk','Pedestrian Ramps — Simple','Pedestrian Signals','Push Button','Sidewalk']},
+ {id:'road-safety',n:'Road Safety',c:'#ff7a2f',i:'road',items:['Curve and Grade','Guardrail','Guardrail Terminals','Intersection — Leg and Junction','Lanes','Pavement Striping Condition','Raised Pavement Markers','Roadmarkings','Rumble Strip','Traffic Signs','Traffic Signs and Condition Assessment']},
+ {id:'tax',n:'Tax and Property',c:'#f4c430',i:'tax',items:['Commercial Signs','Cutouts','Land Use Tax','Property Quality and Condition']},
+ {id:'traffic',n:'Traffic Control',c:'#ff5d8f',i:'traffic',items:['Attenuators','Concrete Barriers','Control Fence','Delineators','Edge of Pavement','Driveways, Sidewalks, and EOP','Edge of Travel','Median','Shoulder','Streetlight','Traffic Light','Wall']},
+ {id:'utility',n:'Utility and Telecommunication',c:'#5fd68a',i:'util',items:['Pole and Pole Height','Pole Details','Span','Vertical Clearance']}];
+const TOTAL=FAM.reduce((a,f)=>a+f.items.length,0),NS='http://www.w3.org/2000/svg',svg=$('svg');
+const mk=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+/* stats count-up */
+function count(el,to){const t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/1300);el.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(t0)}count($('sF'),FAM.length);count($('sI'),TOTAL);
+/* orbit */
+const CX=320,CY=320,RR=232,nodes=[];
+mk('circle',{cx:CX,cy:CY,r:RR,class:'ring'},svg);mk('circle',{cx:CX,cy:CY,r:RR*.55,class:'ring'},svg);
+const defs=mk('defs',{},svg);defs.innerHTML='<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+const links=mk('g',{},svg),ng=mk('g',{},svg);
+for(let k=0;k<3;k++){const p=mk('circle',{cx:CX,cy:CY,r:46,class:'pulse'},svg);p.style.animationDelay=(k*1.2)+'s'}
+const hub=mk('g',{},svg);mk('circle',{cx:CX,cy:CY,r:52,fill:'#0b2440',stroke:'rgba(127,208,255,.5)','stroke-width':1.5},hub);
+const ht=mk('text',{id:'hubT',x:CX,y:CY-2},hub);ht.textContent='CYCLOMEDIA';const hs=mk('text',{id:'hubS',x:CX,y:CY+14},hub);hs.textContent='STREET-LEVEL DATA';
+FAM.forEach((f,i)=>{const a=-Math.PI/2+i*2*Math.PI/FAM.length,r=30+f.items.length*1.9,x=CX+RR*Math.cos(a),y=CY+RR*Math.sin(a);f.x=x;f.y=y;f.r=r;
+ f.link=mk('path',{d:`M${CX},${CY} L${x},${y}`,class:'link',stroke:f.c},links);
+ const g=mk('g',{class:'node',tabindex:0,role:'button','aria-label':f.n+', '+f.items.length+' insights'},ng);
+ f.disc=mk('circle',{class:'disc',cx:x,cy:y,r,fill:f.c+'26',stroke:f.c,'stroke-width':2},g);
+ const ic=mk('g',{transform:`translate(${x-13},${y-13}) scale(1.08)`,fill:'none',stroke:'#fff','stroke-width':1.7,'stroke-linecap':'round','stroke-linejoin':'round',style:'pointer-events:none'},g);ic.innerHTML=IC[f.i];
+ const words=f.n.split(' '),lines=f.n.length>18?[words.slice(0,words.length>3?2:1).join(' '),words.slice(words.length>3?2:1).join(' ')]:[f.n],ty=y+r+17;
+ const lb=mk('text',{class:'lbl',x,y:ty},g);lines.forEach((l,k)=>{const s=mk('tspan',{x,dy:k?18:0},lb);s.textContent=l});
+ const ct=mk('text',{class:'cnt',x,y:ty+(lines.length>1?38:21)},g);ct.textContent=f.items.length+' insights';
+ f.badge=mk('g',{class:'badge',opacity:0},g);mk('circle',{cx:x+r*.72,cy:y-r*.72,r:11,fill:f.c},f.badge);const bt=mk('text',{x:x+r*.72,y:y-r*.72+4,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#06182c'},f.badge);f.bt=bt;
+ f.g=g;g.addEventListener('click',()=>{userSelect(i)});g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();userSelect(i)}});
+ g.addEventListener('mouseenter',()=>{if(!q)preview(i)});});
+/* panel */
+const nav=$('nav');FAM.forEach((f,i)=>{const b=document.createElement('button');b.setAttribute('aria-label',f.n);b.style.setProperty('--c',f.c);b.onclick=()=>userSelect(i);nav.appendChild(b)});
+let cur=0,q='',auto=Q.get('auto')!=='0',timer;
+function chip(t,f,delay,extra){const c=document.createElement('span');c.className='chip';c.style.setProperty('--c',f.c);c.style.animationDelay=delay+'ms';c.textContent=t;if(extra){const s=document.createElement('small');s.textContent=extra;c.appendChild(s)}return c}
+function show(i){cur=i;const f=FAM[i];FAM.forEach((g,k)=>{g.g.classList.toggle('sel',k===i);g.g.classList.toggle('dim',k!==i);g.link.classList.toggle('sel',k===i);g.link.classList.toggle('dim',k!==i);g.disc.setAttribute('r',k===i?g.r*1.14:g.r);g.disc.setAttribute('fill',g.c+(k===i?'55':'26'));g.disc.style.filter=k===i?'url(#glow)':'';if(k===i)g.g.parentNode.appendChild(g.g)});
+ [...nav.children].forEach((b,k)=>{b.classList.toggle('on',k===i)});nav.style.setProperty('--c',f.c);
+ $('picon').style.background=f.c+'33';$('picon').style.boxShadow='inset 0 0 0 1.5px '+f.c;$('picon').innerHTML='<svg viewBox="0 0 24 24">'+IC[f.i]+'</svg>';
+ $('pname').textContent=f.n;$('pcount').textContent=f.items.length+' data insights';
+ const ch=$('chips');ch.innerHTML='';f.items.forEach((t,k)=>ch.appendChild(chip(t,f,k*45)))}
+function preview(i){if(i!==cur){stopAuto();show(i)}}
+function userSelect(i){stopAuto();q='';$('q').value='';clearSearch();show(i)}
+/* auto cycle (stops on first interaction) */
+function barRun(){const b=$('bar').firstElementChild;b.style.transition='none';b.style.width='0';b.style.background=FAM[cur].c;void b.offsetWidth;b.style.transition='width 4.5s linear,background .3s';b.style.width='100%'}
+function startAuto(){if(!auto)return;barRun();timer=setTimeout(()=>{show((cur+1)%FAM.length);startAuto()},4600)}
+function stopAuto(){auto=false;clearTimeout(timer);$('bar').firstElementChild.style.transition='none';$('bar').firstElementChild.style.width='0'}
+/* search */
+$('q').addEventListener('input',e=>{stopAuto();q=e.target.value.trim().toLowerCase();q?doSearch():(clearSearch(),show(cur))});
+function clearSearch(){FAM.forEach(f=>{f.badge.setAttribute('opacity',0);f.g.style.opacity=''})}
+function doSearch(){const hits=FAM.map(f=>({f,m:f.items.filter(t=>t.toLowerCase().includes(q))}));const total=hits.reduce((a,h)=>a+h.m.length,0);
+ hits.forEach(h=>{h.f.badge.setAttribute('opacity',h.m.length?1:0);h.f.bt.textContent=h.m.length;h.f.g.style.opacity=h.m.length?1:.22;h.f.g.classList.remove('dim');h.f.g.classList.remove('sel');h.f.link.classList.toggle('dim',!h.m.length);h.f.link.classList.toggle('sel',!!h.m.length);h.f.disc.setAttribute('r',h.f.r);h.f.disc.style.filter=h.m.length?'url(#glow)':''});
+ [...nav.children].forEach(b=>b.classList.remove('on'));$('picon').innerHTML='<svg viewBox="0 0 24 24" style="stroke:#fff"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';$('picon').style.background='rgba(255,255,255,.1)';$('picon').style.boxShadow='inset 0 0 0 1.5px rgba(255,255,255,.3)';
+ $('pname').textContent=total?`${total} result${total>1?'s':''}`:'No matches';$('pcount').textContent=total?`for “${q}” across ${hits.filter(h=>h.m.length).length} product famil${hits.filter(h=>h.m.length)>1||hits.filter(h=>h.m.length).length>1?'ies':'y'}`:'Try “sign”, “pole” or “ramp”';
+ const ch=$('chips');ch.innerHTML='';let d=0;hits.forEach(h=>h.m.forEach(t=>{const c=chip(t,h.f,d++*40,h.f.n);c.style.cursor='pointer';c.onclick=()=>userSelect(FAM.indexOf(h.f));ch.appendChild(c)}))}
+show(0);startAuto();
+const fp=Q.get('family');if(fp){const i=FAM.findIndex(f=>f.id===fp);if(i>=0){stopAuto();show(i)}}
+</script></body></html>
