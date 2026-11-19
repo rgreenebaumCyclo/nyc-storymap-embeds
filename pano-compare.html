@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NYC 360 Then and Now</title>
+<link rel="stylesheet" href="base.css">
+<style>
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#c.drag{cursor:grabbing}
+#div{position:absolute;top:0;bottom:0;left:50%;width:44px;margin-left:-22px;cursor:ew-resize;touch-action:none;outline:none}
+#div::before{content:"";position:absolute;left:21px;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 14px rgba(0,0,0,.5)}
+#knob{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(6,24,44,.85);border:2px solid #fff;display:grid;place-items:center;font-size:15px;letter-spacing:-2px;box-shadow:0 2px 14px rgba(0,0,0,.45);transition:transform .15s}
+#div:hover #knob,#div.on #knob{transform:scale(1.1)}
+.tag{position:absolute;top:16px;padding:6px 14px;border-radius:99px;font-size:13px;font-weight:700;letter-spacing:.06em;background:rgba(6,24,44,.78);border:1px solid var(--line);backdrop-filter:blur(8px);pointer-events:none}
+#la{left:16px}#lb{right:16px}
+#cap{position:absolute;left:16px;bottom:16px;max-width:min(460px,calc(100% - 32px));padding:11px 16px;pointer-events:none}
+#cap h2{font-size:15px;letter-spacing:-.01em}#cap p{color:#b8c9db;font-size:12.5px;margin-top:2px}
+#tabs{position:absolute;right:16px;bottom:16px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:46%}
+#tabs .btn{height:30px;font-size:12px;background:rgba(6,24,44,.78)}#tabs .btn.on{background:var(--blue);border-color:transparent}
+#hint{position:absolute;left:50%;top:62px;transform:translateX(-50%);font-size:12px;padding:6px 14px;border-radius:99px;background:rgba(6,24,44,.8);border:1px solid var(--line);color:#cfe0f1;pointer-events:none;transition:opacity .8s;white-space:nowrap}
+#msg{position:absolute;inset:0;display:none;place-items:center;text-align:center;color:var(--mut);padding:24px}
+@media(max-width:560px){#tabs{max-width:100%;left:16px;bottom:auto;top:56px;justify-content:flex-start}#cap{max-width:calc(100% - 32px)}#hint{top:auto;bottom:86px}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="div" tabindex="0" role="slider" aria-label="Compare then and now" aria-valuemin="0" aria-valuemax="100"><div id="knob">◀▶</div></div>
+<div class="tag" id="la"></div><div class="tag" id="lb"></div>
+<div id="hint">Drag to look around · drag the handle to compare</div>
+<div class="glass" id="cap"><h2 id="ct"></h2><p id="cp"></p></div><div id="tabs"></div>
+<div id="msg">This viewer needs WebGL 2. Please try a current browser.</div>
+<script>
+// 360° then-and-now swipe viewer. Pairs come from data/pano-pairs.json, or one-off via URL:
+//   ?a=OLD_360.jpg&b=NEW_360.jpg&la=2017&lb=2026&title=…&caption=…&yaw=-14&pitch=6&fov=70&pos=50&off=0&swap=1&floor=-24
+// Images must be equirectangular (2:1). The bottom is never shown, so grey nadir / hood areas stay hidden.
+const Q=new URLSearchParams(location.search),$=id=>document.getElementById(id);
+const cv=$('c'),gl=cv.getContext('webgl2',{antialias:false,alpha:false});
+if(!gl){$('msg').style.display='grid';throw 0}
+const VS=`#version 300 es
+in vec2 p;out vec2 q;void main(){q=p;gl_Position=vec4(p,0.,1.);}`;
+const FS=`#version 300 es
+precision highp float;in vec2 q;out vec4 o;
+uniform sampler2D A,B;uniform vec2 res;uniform float yaw,pitch,tf,split,offA;
+const float PI=3.14159265359;
+vec4 look(sampler2D t,vec3 d,float off){
+ float lon=atan(d.x,-d.z)+off,lat=asin(clamp(d.y,-1.,1.));
+ vec2 uv=vec2(lon/(2.*PI)+.5,.5-lat/PI);
+ vec2 dx=dFdx(uv),dy=dFdy(uv);dx.x-=round(dx.x);dy.x-=round(dy.x);   // no seam where longitude wraps
+ return textureGrad(t,uv,dx,dy);}
+void main(){
+ vec3 r=normalize(vec3(q.x*res.x/res.y*tf,q.y*tf,-1.));
+ float cp=cos(pitch),sp=sin(pitch),cy=cos(yaw),sy=sin(yaw);
+ r=vec3(r.x,r.y*cp-r.z*sp,r.y*sp+r.z*cp);
+ r=vec3(r.x*cy-r.z*sy,r.y,r.x*sy+r.z*cy);
+ float s=(q.x*.5+.5);
+ o=s<split?look(A,r,offA):look(B,r,0.);o.a=1.;}`;
+function sh(t,s){const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(x);return x}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+const loc=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+const U=n=>gl.getUniformLocation(pr,n);
+function tex(unit,img){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);
+ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);gl.generateMipmap(gl.TEXTURE_2D);
+ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+ const ex=gl.getExtension('EXT_texture_filter_anisotropic');if(ex)gl.texParameterf(gl.TEXTURE_2D,ex.TEXTURE_MAX_ANISOTROPY_EXT,8)}
+gl.uniform1i(U('A'),0);gl.uniform1i(U('B'),1);
+const load=src=>new Promise((ok,bad)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>ok(i);i.onerror=()=>bad(new Error('load '+src));i.src=src});
+
+/* ---- view state ---- */
+const rad=Math.PI/180,FLOOR=+(Q.get('floor')||-24);   // lowest latitude ever on screen (hides hood / grey nadir)
+let yaw=0,pitch=0,fov=70,split=.5,off=0,vy=0,vp=0,W,H,dirty=true,pairs=[],cur=0,swap=Q.get('swap')==='1';
+const asp=()=>(W&&H)?W/H:1.5,vf=()=>asp()<1?2*Math.atan(Math.tan(fov*rad/2)/asp())/rad:fov;   // fov applies to the short side
+const clampPitch=()=>{const V=vf(),lo=FLOOR+V/2,hi=82-V/2;pitch=Math.max(lo,Math.min(Math.max(lo,hi),pitch))};
+function resize(){const d=Math.min(2,devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);clampPitch();dirty=true}
+addEventListener('resize',resize);
+function draw(){if(!dirty)return;dirty=false;
+ gl.uniform2f(U('res'),cv.width,cv.height);gl.uniform1f(U('yaw'),yaw*rad);gl.uniform1f(U('pitch'),pitch*rad);gl.uniform1f(U('tf'),Math.tan(vf()*rad/2));
+ gl.uniform1f(U('split'),split);gl.uniform1f(U('offA'),off*rad);gl.drawArrays(gl.TRIANGLES,0,3);
+ $('div').style.left=(split*100)+'%';$('div').setAttribute('aria-valuenow',Math.round(split*100))}
+(function loop(){if(Math.abs(vy)>.01||Math.abs(vp)>.01){yaw+=vy;pitch+=vp;vy*=.93;vp*=.93;clampPitch();dirty=true}draw();requestAnimationFrame(loop)})();
+
+/* ---- pair loading ---- */
+async function show(i){cur=i;const p=pairs[i];$('msg').style.display='none';
+ let [a,b]=await Promise.all([load(p.a),load(p.b)]);let la=p.la||'Then',lb=p.lb||'Now';
+ if(swap){[a,b]=[b,a];[la,lb]=[lb,la]}
+ tex(0,a);tex(1,b);$('la').textContent=la;$('lb').textContent=lb;$('ct').textContent=p.title||'';$('cp').textContent=p.caption||'';$('cap').style.display=(p.title||p.caption)?'':'none';
+ off=+(Q.get('off')??p.off??0);yaw=+(Q.get('yaw')??p.yaw??0);pitch=+(Q.get('pitch')??p.pitch??5);fov=+(Q.get('fov')??p.fov??66);clampPitch();
+ [...$('tabs').children].forEach((b,k)=>b.classList.toggle('on',k===i));dirty=true}
+function start(){if(pairs.length>1)pairs.forEach((p,i)=>{const b=document.createElement('button');b.className='btn';b.textContent=p.title||('Location '+(i+1));b.onclick=()=>show(i);b.onpointerdown=e=>e.stopPropagation();$('tabs').appendChild(b)});
+ resize();show(0).then(()=>{split=+(Q.get('pos')||50)/100;dirty=true;if(!Q.get('pos')){let t=0;(function f(){t+=.035;split=.5+Math.sin(t)*.14*Math.max(0,1-t/6);dirty=true;if(t<6)requestAnimationFrame(f)})()}
+ setTimeout(()=>$('hint').style.opacity=0,7000)}).catch(e=>{$('msg').textContent='Could not load the panoramas.';$('msg').style.display='grid';console.error(e)})}
+if(Q.get('a')&&Q.get('b'))pairs=[{a:Q.get('a'),b:Q.get('b'),la:Q.get('la'),lb:Q.get('lb'),title:Q.get('title'),caption:Q.get('caption')}],start();
+else fetch('data/pano-pairs.json').then(r=>r.json()).then(d=>{pairs=d;start()}).catch(()=>{$('msg').textContent='No panorama pairs configured.';$('msg').style.display='grid'});
+
+/* ---- interaction: drag to look, handle to compare, wheel/pinch to zoom ---- */
+const ptrs=new Map();let pinch=0;
+const degPerPx=()=>vf()/H;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});vy=vp=0;cv.classList.add('drag');$('hint').style.opacity=0;
+ if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y)}});
+cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;
+ if(ptrs.size===2){p.x=e.clientX;p.y=e.clientY;const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch){fov=Math.max(30,Math.min(95,fov*pinch/d));clampPitch()}pinch=d;dirty=true;return}
+ const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;const k=degPerPx();yaw-=dx*k;pitch+=dy*k;vy=-dx*k;vp=dy*k;clampPitch();dirty=true});
+const up=e=>{ptrs.delete(e.pointerId);pinch=0;if(!ptrs.size)cv.classList.remove('drag')};cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{e.preventDefault();fov=Math.max(30,Math.min(95,fov*Math.exp(e.deltaY*.0012)));clampPitch();dirty=true},{passive:false});
+const dv=$('div');let dd=false;
+const setSplit=e=>{split=Math.max(.02,Math.min(.98,e.clientX/cv.clientWidth));dirty=true};
+dv.addEventListener('pointerdown',e=>{dd=true;dv.setPointerCapture(e.pointerId);dv.classList.add('on');$('hint').style.opacity=0;setSplit(e);e.stopPropagation()});
+dv.addEventListener('pointermove',e=>{if(dd)setSplit(e)});dv.addEventListener('pointerup',()=>{dd=false;dv.classList.remove('on')});
+addEventListener('keydown',e=>{const k=fov/30;if(e.key==='ArrowLeft'){if(document.activeElement===dv)split=Math.max(.02,split-.03);else yaw-=2*k}
+ else if(e.key==='ArrowRight'){if(document.activeElement===dv)split=Math.min(.98,split+.03);else yaw+=2*k}
+ else if(e.key==='ArrowUp')pitch+=2*k;else if(e.key==='ArrowDown')pitch-=2*k;else if(e.key==='+'||e.key==='=')fov=Math.max(30,fov-5);else if(e.key==='-')fov=Math.min(95,fov+5);else return;clampPitch();dirty=true});
+</script></body></html>
