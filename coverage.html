@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NYC Glow Map</title>
+<link rel="stylesheet" href="base.css">
+<style>
+#c{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none;background:radial-gradient(100% 80% at 50% 40%,#0a2442,#041021)}
+#c:active{cursor:grabbing}
+.hud{position:absolute;pointer-events:none;left:22px;top:20px;right:22px}
+h1{font-size:clamp(18px,3vw,28px);letter-spacing:-.02em;margin-top:2px;max-width:440px}
+#big{font-size:clamp(38px,7vw,76px);font-weight:700;letter-spacing:-.045em;font-variant-numeric:tabular-nums;line-height:1;margin-top:10px;background:linear-gradient(90deg,#fff,#7fd0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#sub{color:var(--mut);margin-top:4px}
+#view{margin-top:14px;display:inline-flex;gap:8px;align-items:baseline;padding:7px 14px;border-radius:99px;font-size:13px;color:#cfe6ff;background:rgba(8,26,46,.7);border:1px solid var(--line);opacity:0;transform:translateY(4px);transition:.3s}
+#view.on{opacity:1;transform:none}#view b{font-size:16px;font-variant-numeric:tabular-nums;color:#fff}
+#dock{position:absolute;left:16px;right:16px;bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.grp{display:flex;gap:6px;flex-wrap:wrap}
+.btn.on{background:var(--blue);border-color:transparent}
+.lab{position:absolute;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.55);transform:translate(-50%,-50%);transition:opacity .3s;pointer-events:none;text-shadow:0 0 8px #041021}
+#hint{position:absolute;right:22px;top:24px;font-size:12px;color:var(--mut);pointer-events:none;transition:opacity .6s}
+#load{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);background:#041021;transition:opacity .6s}
+@media(max-width:640px){#hint{display:none}.btn{padding:0 10px}}
+</style></head><body>
+<canvas id="c"></canvas><div id="labs"></div>
+<div class="hud"><div class="eyebrow" id="eyebrow">Street-level imagery · 2026</div><h1 id="title">New York City, captured</h1><div id="big">0</div><div id="sub">street-level images captured in 2026</div><div id="view"><b id="vn">0</b> <span>images in view</span></div></div>
+<div id="hint">Scroll to zoom · drag to pan</div>
+<div id="dock"><div class="grp" id="fly"></div><div class="grp"><button class="btn" id="replay">↻ Replay</button><button class="btn" id="zin">＋</button><button class="btn" id="zout">－</button><button class="btn" id="fit">Reset</button></div></div>
+<div id="load">Loading…</div>
+<script>
+// Params: ?title=…&eyebrow=…&sub=…&sweep=0&color=2f8cff&fly=0 (hide borough buttons)
+const Q=new URLSearchParams(location.search),$=id=>document.getElementById(id);
+if(Q.get('title'))$('title').textContent=Q.get('title');if(Q.get('eyebrow'))$('eyebrow').textContent=Q.get('eyebrow');if(Q.get('sub'))$('sub').textContent=Q.get('sub');
+const cv=$('c'),g=cv.getContext('2d');let W,H,DPR,meta,N,X,Y,Cn,fitS,sweep=1,raf,anim;
+const R=6378137,mx=lon=>R*lon*Math.PI/180,my=lat=>R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
+const v={s:1,cx:0,cy:0};let B={};
+const PLACES=[['Manhattan',-73.975,40.775,.04],['Brooklyn',-73.95,40.65,.032],['Queens',-73.82,40.715,.03],['The Bronx',-73.88,40.85,.04],['Staten Island',-74.15,40.58,.036]];
+const rgb=(()=>{const c=(Q.get('color')||'2f8cff');return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)]})();
+const SX=x=>(x-v.cx)*v.s+W/2,SY=y=>H/2-(y-v.cy)*v.s;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR}
+function fit(){const wide=W/H>1.3;fitS=Math.min((wide?W*.62:W)/(B.x1-B.x0),(H-(wide?70:130))/(B.y1-B.y0))*1.0;v.s=fitS;v.cx=(B.x0+B.x1)/2-(wide?W*.09:0)/v.s;v.cy=(B.y0+B.y1)/2-(wide?0:H*.03)/v.s}
+let lastCount=0;
+function render(){
+ g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,W,H);g.globalCompositeOperation='lighter';
+ const C=meta.cell,px=Math.max(1.2,C*v.s*.9),yCut=B.y0+(B.y1-B.y0)*sweep,zoomK=Math.min(1,fitS/v.s*2.2),cover=Math.min(1,C*v.s*.9/1.2);let vis=0;
+ for(let i=0;i<N;i++){const wy=Y[i]*C;if(wy>yCut)continue;const x=SX(X[i]*C),y=SY(wy);if(x<-6||y<-6||x>W+6||y>H+6)continue;vis+=Cn[i];
+  const n=Cn[i],a=Math.min(.7,(.16+n*.06)*(.55+.45*zoomK)*(.3+.7*cover));g.fillStyle=`rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;g.fillRect(x-px/2,y-px/2,px,px);
+  if(n>3&&cover>.8){g.fillStyle=`rgba(190,235,255,${Math.min(.55,n*.04)})`;const q=px*.55;g.fillRect(x-q/2,y-q/2,q,q)}}
+ g.globalCompositeOperation='source-over';
+ if(sweep<1){const y=SY(yCut);const gr=g.createLinearGradient(0,y,0,y+90);gr.addColorStop(0,'rgba(127,208,255,.35)');gr.addColorStop(1,'rgba(127,208,255,0)');g.fillStyle=gr;g.fillRect(0,y,W,90);g.fillStyle='rgba(180,230,255,.9)';g.fillRect(0,y,W,1.5)}
+ labs();
+ const zoomed=v.s>fitS*1.5&&sweep>=1;$('view').classList.toggle('on',zoomed);if(zoomed){$('vn').textContent=vis.toLocaleString()}
+}
+function labs(){const el=$('labs');if(!el.children.length)PLACES.forEach(([n])=>{const d=document.createElement('div');d.className='lab';d.textContent=n;el.appendChild(d)});
+ [...el.children].forEach((d,i)=>{const[,lo,la]=PLACES[i];d.style.left=SX(mx(lo))+'px';d.style.top=SY(my(la))+'px';d.style.opacity=v.s>fitS*1.8?0:.8})}
+function go(to,ms=900){cancelAnimationFrame(anim);const f={...v},t0=performance.now();(function s(t){const k=Math.min(1,(t-t0)/ms),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+ // zoom in log space so the move feels even
+ v.s=f.s*Math.pow(to.s/f.s,e);v.cx=f.cx+(to.cx-f.cx)*e;v.cy=f.cy+(to.cy-f.cy)*e;render();if(k<1)anim=requestAnimationFrame(s)})(t0)}
+function replay(){cancelAnimationFrame(raf);fit();const t0=performance.now(),D=3600;
+ (function f(t){const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3);sweep=Q.get('sweep')==='0'?1:e;$('big').textContent=Math.round(meta.total*e).toLocaleString();render();if(k<1)raf=requestAnimationFrame(f)})(t0)}
+Promise.all([fetch('data/glow2026.json').then(r=>r.json()),fetch('data/glow2026.bin').then(r=>r.arrayBuffer())]).then(([m,buf])=>{
+ meta=m;N=m.count;X=new Int32Array(buf,0,N);Y=new Int32Array(buf,N*4,N);Cn=new Uint16Array(buf,N*8,N);
+ let a=1e12,b=-1e12,c=1e12,e=-1e12;for(let i=0;i<N;i++){a=Math.min(a,X[i]);b=Math.max(b,X[i]);c=Math.min(c,Y[i]);e=Math.max(e,Y[i])}
+ B={x0:a*m.cell,x1:b*m.cell,y0:c*m.cell,y1:e*m.cell};
+ if(Q.get('fly')!=='0')PLACES.forEach(([n,lo,la,s])=>{const bt=document.createElement('button');bt.className='btn';bt.textContent=n;bt.onclick=()=>{go({s,cx:mx(lo),cy:my(la)});[...$('fly').children].forEach(x=>x.classList.toggle('on',x===bt))};$('fly').appendChild(bt)});
+ resize();fit();$('load').style.opacity=0;setTimeout(()=>$('load').remove(),700);replay();setTimeout(()=>$('hint').style.opacity=0,9000)});
+addEventListener('resize',()=>{if(!meta)return;resize();render()});
+let drag=null;cv.onpointerdown=e=>{cancelAnimationFrame(anim);drag={x:e.clientX,y:e.clientY,cx:v.cx,cy:v.cy};cv.setPointerCapture(e.pointerId)};
+cv.onpointermove=e=>{if(!drag)return;v.cx=drag.cx-(e.clientX-drag.x)/v.s;v.cy=drag.cy+(e.clientY-drag.y)/v.s;render()};cv.onpointerup=()=>drag=null;
+function zoom(f,px=W/2,py=H/2){const wx=(px-W/2)/v.s+v.cx,wy=v.cy-(py-H/2)/v.s,s=Math.max(fitS*.7,Math.min(.5,v.s*f));v.s=s;v.cx=wx-(px-W/2)/s;v.cy=wy+(py-H/2)/s;render()}
+cv.addEventListener('wheel',e=>{e.preventDefault();cancelAnimationFrame(anim);zoom(Math.exp(-e.deltaY*.0015),e.clientX,e.clientY)},{passive:false});
+$('zin').onclick=()=>zoom(1.7);$('zout').onclick=()=>zoom(1/1.7);
+$('fit').onclick=()=>{[...$('fly').children].forEach(x=>x.classList.remove('on'));const s=v.s,cx=v.cx,cy=v.cy;fit();const t={...v};Object.assign(v,{s,cx,cy});go(t)};
+$('replay').onclick=replay;
+</script></body></html>

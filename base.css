@@ -1,0 +1,9 @@
+:root{--navy:#06182c;--navy2:#0b2440;--ink:#eef4fa;--mut:#8ea5bc;--blue:#2f8cff;--teal:#13c4a8;--or:#ff7a2f;--bx:#f4c430;--si:#a78bfa;--line:rgba(255,255,255,.10)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--navy);color:var(--ink);font:14px/1.45 "Inter",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.glass{background:rgba(8,26,46,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px}
+.btn{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:999px;height:34px;min-width:34px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+.btn:hover{background:rgba(255,255,255,.15)}
+.btn.primary{background:var(--blue);border-color:transparent;font-weight:600}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:600}

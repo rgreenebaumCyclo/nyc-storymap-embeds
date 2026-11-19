@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NYC Story Map Embeds</title>
+<link rel="stylesheet" href="base.css"><style>
+html,body{overflow:auto;height:auto}body{padding:40px clamp(16px,5vw,64px) 80px}
+h1{font-size:clamp(28px,5vw,44px);letter-spacing:-.03em}.lead{color:var(--mut);max-width:640px;margin:8px 0 36px}
+.card{margin-bottom:44px}.card h2{font-size:20px;margin:6px 0 4px}.card p{color:#b8c9db;max-width:640px;margin-bottom:12px}
+iframe{width:100%;height:520px;border:1px solid var(--line);border-radius:14px;background:#06182c}iframe.short{height:170px}
+.url{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}code{background:#0b2440;padding:6px 10px;border-radius:8px;font-size:12px;color:#9fd0ff;word-break:break-all}
+</style></head><body>
+<div class="eyebrow">Cyclomedia × New York City</div><h1>Story map embeds</h1>
+<p class="lead">Each widget is a standalone page. In ArcGIS StoryMaps choose <b>Embed</b> and paste the URL (it must be HTTPS and public). Every widget is customizable through the URL.</p>
+<div id="list"></div>
+<script>
+const W=[
+['coverage.html','Glow map · 2026 coverage','Every street-level image captured in 2026 lit up across the five boroughs. South-to-north reveal, pan and zoom, borough fly-to buttons, and a live count of images in view.','','Params: title, eyebrow, sub, sweep=0, color (hex, no #), fly=0 (hide borough buttons)',600],
+['stats.html','Animated stat strip','Count-up numbers. Edit the defaults to the figures you want to publish.','','Params: items=1.8M+:Images in 2026;5:Boroughs, dur (ms)',170],
+['compare.html','Then and now slider','Drag to compare an older and a newer image of the same street. Supports several locations with tabs, fed from data/pairs.json.','','Params: a, b (image URLs), la, lb (labels), title, caption, pos (0-100)',520]];
+const base=location.href.replace(/[^/]*$/,'');
+W.forEach(([f,t,d,q,pp,h])=>{const el=document.createElement('div');el.className='card';
+ el.innerHTML=`<div class="eyebrow">${f}</div><h2>${t}</h2><p>${d}</p><iframe loading="lazy" style="height:${h}px" src="${f}${q}"></iframe><div class="url"><code>${base}${f}${q}</code><button class="btn">Copy URL</button></div><p style="margin-top:8px;font-size:12px;color:#8ea5bc">${pp}</p>`;
+ el.querySelector('button').onclick=e=>{navigator.clipboard.writeText(base+f+q);e.target.textContent='Copied ✓';setTimeout(()=>e.target.textContent='Copy URL',1500)};
+ document.getElementById('list').appendChild(el)});
+</script></body></html>

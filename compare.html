@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NYC Then and Now</title>
+<link rel="stylesheet" href="base.css">
+<style>
+#w{position:absolute;inset:0;touch-action:pan-y;user-select:none;cursor:ew-resize;overflow:hidden}
+#w img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+#top{position:absolute;inset:0;clip-path:inset(0 50% 0 0)}
+#bar{position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff;box-shadow:0 0 18px rgba(255,255,255,.6)}
+#knob{position:absolute;top:50%;left:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(6,24,44,.85);border:2px solid #fff;display:grid;place-items:center;font-size:15px;letter-spacing:-2px}
+.tag{position:absolute;top:16px;padding:6px 14px;border-radius:99px;font-size:13px;font-weight:700;letter-spacing:.06em;background:rgba(6,24,44,.78);border:1px solid var(--line);backdrop-filter:blur(8px)}
+#la{left:16px}#lb{right:16px}
+#cap{position:absolute;left:16px;bottom:16px;max-width:min(520px,calc(100% - 32px));padding:12px 16px;pointer-events:none}
+#cap h2{font-size:16px;letter-spacing:-.01em}#cap p{color:#b8c9db;font-size:13px;margin-top:2px}
+#tabs{position:absolute;right:16px;bottom:16px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:50%}
+#tabs .btn{height:30px;font-size:12px;background:rgba(6,24,44,.78)}#tabs .btn.on{background:var(--blue);border-color:transparent}
+#demo{position:absolute;left:50%;top:60px;transform:translateX(-50%);font-size:11px;color:#06182c;background:#f4c430;padding:3px 10px;border-radius:99px;font-weight:700;display:none}
+</style></head><body>
+<div id="w"><img id="b" alt=""><div id="top"><img id="a" alt=""></div><div id="bar"><div id="knob">◀▶</div></div>
+<div class="tag" id="la"></div><div class="tag" id="lb"></div><div id="demo">PLACEHOLDER IMAGES — add real pairs in data/pairs.json</div>
+<div class="glass" id="cap"><h2 id="ct"></h2><p id="cp"></p></div><div id="tabs"></div></div>
+<script>
+// Pairs come from data/pairs.json: [{"title","caption","a","b","la","lb"}] (image paths relative to this page).
+// Or one-off via URL: ?a=OLD_URL&b=NEW_URL&la=2017&lb=2026&title=…&caption=…&pos=50
+const Q=new URLSearchParams(location.search),$=id=>document.getElementById(id);
+let pos=+(Q.get('pos')||50),pairs=[];const w=$('w');
+function set(p){pos=Math.max(0,Math.min(100,p));$('top').style.clipPath=`inset(0 ${100-pos}% 0 0)`;$('bar').style.left=pos+'%'}
+function show(i){const p=pairs[i];$('a').src=p.a;$('b').src=p.b;
+ // demo placeholder: tint the "older" copy so the slider is visible (no B&W)
+ $('a').style.filter=p.demo?'sepia(.45) saturate(.75) brightness(.92) hue-rotate(-8deg)':'';
+ $('la').textContent=p.la||'Before';$('lb').textContent=p.lb||'After';$('ct').textContent=p.title||'';$('cp').textContent=p.caption||'';$('cap').style.display=(p.title||p.caption)?'':'none';
+ $('demo').style.display=p.demo?'block':'none';[...$('tabs').children].forEach((b,k)=>b.classList.toggle('on',k===i))}
+function start(){if(pairs.length>1)pairs.forEach((p,i)=>{const b=document.createElement('button');b.className='btn';b.textContent=p.title||('Location '+(i+1));b.onclick=e=>{e.stopPropagation();show(i)};b.onpointerdown=e=>e.stopPropagation();$('tabs').appendChild(b)});
+ show(0);set(pos);if(!Q.get('pos')){let t=0;const f=()=>{t+=.04;set(50+Math.sin(t)*14*Math.max(0,1-t/6));if(t<6)requestAnimationFrame(f)};setTimeout(f,500)}}
+if(Q.get('a')&&Q.get('b')){pairs=[{a:Q.get('a'),b:Q.get('b'),la:Q.get('la'),lb:Q.get('lb'),title:Q.get('title'),caption:Q.get('caption')}];start()}
+else fetch('data/pairs.json').then(r=>r.ok?r.json():[]).catch(()=>[]).then(d=>{pairs=d.length?d:[{a:'nyc-hero.jpg',b:'nyc-hero.jpg',la:'2017',lb:'2026',title:'Your location here',caption:'Drop an older and a newer image of the same spot into public/pairs/ and list them in data/pairs.json.',demo:true}];start()});
+let on=false;w.onpointerdown=e=>{on=true;w.setPointerCapture(e.pointerId);at(e)};w.onpointermove=e=>{if(on)at(e)};w.onpointerup=()=>on=false;
+function at(e){const r=w.getBoundingClientRect();set((e.clientX-r.left)/r.width*100)}
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')set(pos-3);if(e.key==='ArrowRight')set(pos+3)});
+</script></body></html>
