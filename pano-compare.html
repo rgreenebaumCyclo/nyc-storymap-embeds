@@ -87,7 +87,7 @@ function start(){if(pairs.length>1)pairs.forEach((p,i)=>{const b=document.create
  resize();show(0).then(()=>{split=+(Q.get('pos')||50)/100;dirty=true;if(!Q.get('pos')){let t=0;(function f(){t+=.035;split=.5+Math.sin(t)*.14*Math.max(0,1-t/6);dirty=true;if(t<6)requestAnimationFrame(f)})()}
  setTimeout(()=>$('hint').style.opacity=0,7000)}).catch(e=>{$('msg').textContent='Could not load the panoramas.';$('msg').style.display='grid';console.error(e)})}
 if(Q.get('a')&&Q.get('b'))pairs=[{a:Q.get('a'),b:Q.get('b'),la:Q.get('la'),lb:Q.get('lb'),title:Q.get('title'),caption:Q.get('caption')}],start();
-else fetch('data/pano-pairs.json').then(r=>r.json()).then(d=>{pairs=d;start()}).catch(()=>{$('msg').textContent='No panorama pairs configured.';$('msg').style.display='grid'});
+else fetch('data/pano-pairs.json',{cache:'no-cache'}).then(r=>r.json()).then(d=>{pairs=d;start()}).catch(()=>{$('msg').textContent='No panorama pairs configured.';$('msg').style.display='grid'});
 
 /* ---- interaction: drag to look, handle to compare, wheel/pinch to zoom ---- */
 const ptrs=new Map();let pinch=0;
