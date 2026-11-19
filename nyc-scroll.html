@@ -9,7 +9,7 @@ html,body{height:auto;overflow-x:hidden;overflow-y:auto;background:#041021}
 .layer{position:absolute;inset:0;width:100%;height:100%;opacity:0;will-change:opacity,transform}
 canvas.layer{display:block}
 #s2{background:#06182c}
-#imgwrap{position:absolute;will-change:transform}#imgwrap img{position:absolute;inset:0;width:100%;height:100%}
+#imgwrap{position:absolute;will-change:transform}#imgwrap img{position:absolute;inset:0;width:100%;height:100%;filter:contrast(1.1) saturate(1.1) brightness(1.05)}
 #s2 .tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,56,150,.48),rgba(6,40,110,.58));mix-blend-mode:multiply}
 #s2 .tint2{position:absolute;inset:0;background:radial-gradient(90% 70% at 50% 50%,rgba(0,0,0,0) 40%,rgba(2,10,30,.6) 100%)}
 #ret{position:absolute;width:0;height:0;transition:left .7s cubic-bezier(.2,.8,.2,1),top .7s cubic-bezier(.2,.8,.2,1)}
@@ -44,7 +44,10 @@ canvas.layer{display:block}
 @keyframes wheel{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(10px)}}
 #chip{position:absolute;z-index:4;font:600 11px/1.5 ui-monospace,Consolas,monospace;letter-spacing:.08em;color:#27f0c0;text-shadow:0 0 10px rgba(39,240,192,.6);pointer-events:none;opacity:0}
 #load{position:absolute;inset:0;display:grid;place-items:center;color:#bcd4ff;background:#05204f;z-index:20;transition:opacity .7s;font-size:13px;letter-spacing:.14em}
-@media(max-width:640px){#rail{display:none}#hint span{display:none}}
+@media(max-width:640px){#rail{display:none}#hint span{display:none}
+ #card{left:12px!important;top:46px;width:calc(100% - 24px);padding:11px 14px}#card h3{font-size:19px;margin-bottom:6px}#card .k{font-size:10.5px;line-height:1.5}#card hr,#card .row{display:none}#card .tag{margin-top:8px;font-size:9px}
+ #words{bottom:92px}#words button{font-size:clamp(22px,3.6vh,30px)}#blurb{font-size:12px;max-width:78%;bottom:16px}#top{font-size:10px;letter-spacing:.14em}#chip{font-size:9px}}
+@media(max-height:520px){#blurb{display:none}#words{bottom:16px}}
 </style></head><body>
 <div id="scroller"></div>
 <div id="stage">
@@ -73,13 +76,13 @@ const BL=['We capture New York in unmatched detail, every avenue, every block, e
 const RANGES=[[0,.27],[.25,.52],[.5,.77],[.75,1]];
 const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,cl=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),sm=(a,b,x)=>{const t=cl((x-a)/(b-a));return t*t*(3-2*t)};
 const R=6378137,MX=lon=>R*lon*Math.PI/180,MY=lat=>R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360)),IX=x=>x/R*180/Math.PI,IY=y=>(2*Math.atan(Math.exp(y/R))-Math.PI/2)*180/Math.PI;
-let W,H,DPR,meta,N,X,Y,Cn,WX,WY,ready=false;
+let W,H,DPR,meta,N,X,Y,Cn,WX,WY,ready=false,BK=null;const TL=500;
 const c1=$('c1'),c3=$('c3'),c4=$('c4'),g1=c1.getContext('2d'),g3=c3.getContext('2d'),g4=c4.getContext('2d');
 let off4=null;
 /* ---------- layout ---------- */
 function resize(){if($('imgwrap'))$('imgwrap')._g=null;DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;for(const c of[c1,c3,c4]){c.width=Math.round(W*DPR);c.height=Math.round(H*DPR)}if(ready)buildOff4()}
 /* ---------- data ---------- */
-Promise.all([fetch('data/glow2026.json').then(r=>r.json()),fetch('data/glow2026.bin').then(r=>r.arrayBuffer())]).then(([m,buf])=>{meta=m;N=m.count;X=new Int32Array(buf,0,N);Y=new Int32Array(buf,N*4,N);Cn=new Uint16Array(buf,N*8,N);WX=new Float32Array(N);WY=new Float32Array(N);for(let i=0;i<N;i++){WX[i]=X[i]*m.cell;WY[i]=Y[i]*m.cell}ready=true;resize();$('load').style.opacity=0;setTimeout(()=>$('load').remove(),700)});
+Promise.all([fetch('data/glow2026.json').then(r=>r.json()),fetch('data/glow2026.bin').then(r=>r.arrayBuffer())]).then(([m,buf])=>{meta=m;N=m.count;X=new Int32Array(buf,0,N);Y=new Int32Array(buf,N*4,N);Cn=new Uint16Array(buf,N*8,N);WX=new Float32Array(N);WY=new Float32Array(N);for(let i=0;i<N;i++){WX[i]=X[i]*m.cell;WY[i]=Y[i]*m.cell}BK=new Map();for(let i=0;i<N;i++){const k=Math.floor(WX[i]/TL)*100000+Math.floor(WY[i]/TL);let a=BK.get(k);if(!a)BK.set(k,a=[]);a.push(i)}ready=true;resize();$('load').style.opacity=0;setTimeout(()=>$('load').remove(),700)});
 addEventListener('resize',resize);resize();
 /* ---------- scene 1: CAPTURE (real 2026 capture trails along 7th Ave, Midtown Manhattan) ---------- */
 const P0=[MX(-73.9855),MY(40.7580)],PHI=29*Math.PI/180,DV=[Math.sin(PHI),Math.cos(PHI)],RV=[Math.cos(PHI),-Math.sin(PHI)],TRAVEL=620;
@@ -93,10 +96,11 @@ function scene1(t,time){const g=g1;g.setTransform(DPR,0,0,DPR,0,0);const bg=g.cr
  const s=H/1050,cxw=P0[0]+DV[0]*(-TRAVEL/2+TRAVEL*t),cyw=P0[1]+DV[1]*(-TRAVEL/2+TRAVEL*t),VX=W*.5,VY=H*.64;
  if(ready){const cs=meta.cell*1.04,dp=Math.max(1.6,H/420)/s;g.save();
   const A=s*RV[0],C=s*RV[1],B=-s*DV[0],D=-s*DV[1];g.setTransform(DPR*A,DPR*B,DPR*C,DPR*D,DPR*(VX-(A*cxw+C*cyw)),DPR*(VY-(B*cxw+D*cyw)));g.globalCompositeOperation='lighter';
-  for(let i=0;i<N;i++){const vx=WX[i]-cxw,vy=WY[i]-cyw,a=vx*DV[0]+vy*DV[1],b=vx*RV[0]+vy*RV[1],sx=VX+b*s,sy=VY-a*s;if(sx<-40||sx>W+40||sy<-40||sy>H+40)continue;
+  const rad=Math.hypot(W,H)/s*.62+TL,kx0=Math.floor((cxw-rad)/TL),kx1=Math.floor((cxw+rad)/TL),ky0=Math.floor((cyw-rad)/TL),ky1=Math.floor((cyw+rad)/TL);
+  for(let kx=kx0;kx<=kx1;kx++)for(let ky=ky0;ky<=ky1;ky++){const lst=BK.get(kx*100000+ky);if(!lst)continue;for(let q0=0;q0<lst.length;q0++){const i=lst[q0];const vx=WX[i]-cxw,vy=WY[i]-cyw,a=vx*DV[0]+vy*DV[1],b=vx*RV[0]+vy*RV[1],sx=VX+b*s,sy=VY-a*s;if(sx<-40||sx>W+40||sy<-40||sy>H+40)continue;
    let al,cr,cg,cb;if(a<=18){const k=Math.exp(a/340);al=.22+.34*k;cr=60+110*k;cg=170+70*k;cb=255}else{const k=Math.exp(-(a-18)/420);al=.07+.1*k;cr=40;cg=110;cb=235}
-   g.fillStyle='rgba('+(cr|0)+','+(cg|0)+','+(cb|0)+','+(al*1.25)+')';g.beginPath();g.arc(WX[i],WY[i],cs*.3,0,6.3);g.fill();
-   if(a<=18){g.fillStyle='rgba(190,245,255,'+(.35+.5*Math.exp(a/200))+')';for(let q=0;q<3;q++){g.fillRect(WX[i]+(hsh(i,q)-.5)*cs,WY[i]+(hsh(q,i+77)-.5)*cs,dp,dp)}}}
+   g.fillStyle='rgba('+(cr|0)+','+(cg|0)+','+(cb|0)+','+(al*1.25)+')';g.beginPath();g.arc(WX[i],WY[i],cs*.22,0,6.3);g.fill();
+   if(a<=18){g.fillStyle='rgba(190,245,255,'+(.35+.5*Math.exp(a/200))+')';for(let q=0;q<3;q++){g.fillRect(WX[i]+(hsh(i,q)-.5)*cs,WY[i]+(hsh(q,i+77)-.5)*cs,dp,dp)}}}}
   g.restore()}
  // light columns + lidar pulses from the vehicle
  g.fillStyle='rgba(120,190,255,.10)';for(const f of[.28,.405,.52]){g.fillRect(W*f,0,2,H)}
@@ -148,13 +152,13 @@ const clamp1=v=>Math.min(v,170);
 /* ---------- scene 4: VISION (whole-city coverage) ---------- */
 function buildOff4(){if(!ready)return;off4=document.createElement('canvas');off4.width=Math.round(W*DPR);off4.height=Math.round(H*DPR);const g=off4.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);
  let a=1e12,b=-1e12,c=1e12,e=-1e12;for(let i=0;i<N;i+=7){a=Math.min(a,WX[i]);b=Math.max(b,WX[i]);c=Math.min(c,WY[i]);e=Math.max(e,WY[i])}
- const sc=Math.min(W*.58/(b-a),H*.78/(e-c)),mx=(a+b)/2,my=(c+e)/2,ox=W*.6,oy=H*.5;off4.sc=sc;off4.ox=ox;off4.oy=oy;off4.b={a,b,c,e,mx,my};off4.top=oy-(e-my)*sc;off4.bot=oy+(my-c)*sc;
- g.globalCompositeOperation='lighter';const px=Math.max(1.3,meta.cell*sc*.85),cov=Math.min(1,meta.cell*sc*.85/1.3);for(let i=0;i<N;i++){const x=ox+(WX[i]-mx)*sc,y=oy-(WY[i]-my)*sc,n2=Cn[i];g.fillStyle=`rgba(${40+Math.min(80,n2*12)|0},${150+Math.min(70,n2*10)|0},255,${(Math.min(.5,.1+n2*.045)*(.28+.72*cov))})`;g.fillRect(x-px/2,y-px/2,px,px)}}
+ const nar=W<640,sc=Math.min((nar?W*.9:W*.58)/(b-a),H*(nar?.5:.78)/(e-c)),mx=(a+b)/2,my=(c+e)/2,ox=nar?W*.5:W*.6,oy=nar?H*.54:H*.5;off4.sc=sc;off4.ox=ox;off4.oy=oy;off4.b={a,b,c,e,mx,my};off4.top=oy-(e-my)*sc;off4.bot=oy+(my-c)*sc;
+ g.globalCompositeOperation='lighter';const px=Math.max(1.3,meta.cell*sc*.85),cov=Math.min(1,meta.cell*sc*.85/1.3);for(let i=0;i<N;i++){const x=ox+(WX[i]-mx)*sc,y=oy-(WY[i]-my)*sc,n2=Cn[i];g.fillStyle=`rgba(${40+Math.min(80,n2*12)|0},${150+Math.min(70,n2*10)|0},255,${(Math.min(.5,.1+n2*.045)*(.1+.9*cov*cov))})`;g.fillRect(x-px/2,y-px/2,px,px)}}
 const BORO=[['MANHATTAN',-73.97,40.80],['BROOKLYN',-73.93,40.62],['QUEENS',-73.78,40.72],['THE BRONX',-73.86,40.89],['STATEN ISLAND',-74.18,40.56]];
 function scene4(t,time){const g=g4;g.setTransform(DPR,0,0,DPR,0,0);const bg=g.createRadialGradient(W*.6,H*.5,0,W*.6,H*.5,Math.max(W,H)*.7);bg.addColorStop(0,'#0a3a8c');bg.addColorStop(1,'#031236');g.fillStyle=bg;g.fillRect(0,0,W,H);
  if(!off4)return;const k=ease(cl(t*1.6)),cut=off4.top+(off4.bot-off4.top)*(1-k);
  // HUD ring
- const rcx=W*.6,rcy=H*.5,rad=Math.min(W*.34,H*.46);g.strokeStyle='rgba(130,190,255,.35)';g.lineWidth=1.4;g.beginPath();g.arc(rcx,rcy,rad,0,7);g.stroke();g.beginPath();g.arc(rcx,rcy,rad*1.12,0,7);g.setLineDash([2,8]);g.stroke();g.setLineDash([]);
+ const rcx=off4.ox,rcy=off4.oy,rad=W<640?W*.47:Math.min(W*.34,H*.46);g.strokeStyle='rgba(130,190,255,.35)';g.lineWidth=1.4;g.beginPath();g.arc(rcx,rcy,rad,0,7);g.stroke();g.beginPath();g.arc(rcx,rcy,rad*1.12,0,7);g.setLineDash([2,8]);g.stroke();g.setLineDash([]);
  for(let d=0;d<360;d+=3){const an=(d+time*.004)*Math.PI/180,l=d%15?6:12;g.strokeStyle=`rgba(150,200,255,${d%15?.25:.55})`;g.beginPath();g.moveTo(rcx+Math.cos(an)*rad*1.12,rcy+Math.sin(an)*rad*1.12);g.lineTo(rcx+Math.cos(an)*(rad*1.12+l),rcy+Math.sin(an)*(rad*1.12+l));g.stroke()}
  g.save();g.beginPath();g.rect(0,cut,W,H);g.clip();g.globalAlpha=1;g.drawImage(off4,0,0,W,H);g.restore();
  if(k<.985){g.fillStyle='rgba(120,230,255,.9)';g.fillRect(0,cut,W,1.5)}
@@ -173,10 +177,11 @@ function frame(now){
  prog+=(p-prog)*(AUTO||FIX!==null?1:.14);const q=prog;
  const op=RANGES.map(([a,b],i)=>{const inn=i===0?1:sm(a,a+.06,q),out=i===3?1:1-sm(b-.02,b+.04,q);return Math.max(0,Math.min(inn,out))});
  const loc=RANGES.map(([a,b])=>cl((q-a)/(b-a)));
- if(op[0]>.01){c1.style.opacity=op[0];scene1(loc[0],now)}else c1.style.opacity=0;
+ const tf=o=>'scale('+(1+(1-o)*.05)+')';
+ if(op[0]>.01){c1.style.opacity=op[0];c1.style.transform=tf(op[0]);scene1(loc[0],now)}else c1.style.opacity=0;
  if(op[1]>.01){$('s2').style.opacity=op[1];scene2(loc[1])}else $('s2').style.opacity=0;
- if(op[2]>.01){c3.style.opacity=op[2];scene3(loc[2],now)}else c3.style.opacity=0;
- if(op[3]>.01){c4.style.opacity=op[3];scene4(loc[3],now)}else c4.style.opacity=0;
+ if(op[2]>.01){c3.style.opacity=op[2];c3.style.transform=tf(op[2]);scene3(loc[2],now)}else c3.style.opacity=0;
+ if(op[3]>.01){c4.style.opacity=op[3];c4.style.transform=tf(op[3]);scene4(loc[3],now)}else c4.style.opacity=0;
  setWord(q<.26?0:q<.51?1:q<.76?2:3);$('hint').style.opacity=q<.03?1:0;if(op[0]<.4)$('chip').style.opacity=0;else $('chip').style.opacity=1;
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
