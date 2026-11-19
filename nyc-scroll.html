@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NYC Capture to Vision</title>
+<link rel="stylesheet" href="base.css">
+<style>
+html,body{height:auto;overflow-x:hidden;overflow-y:auto;background:#041021}
+#scroller{height:560vh;position:relative}
+#stage{position:fixed;inset:0;overflow:hidden;background:#05204f}
+.layer{position:absolute;inset:0;width:100%;height:100%;opacity:0;will-change:opacity,transform}
+canvas.layer{display:block}
+#s2{background:#06182c}
+#imgwrap{position:absolute;will-change:transform}#imgwrap img{position:absolute;inset:0;width:100%;height:100%}
+#s2 .tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,56,150,.48),rgba(6,40,110,.58));mix-blend-mode:multiply}
+#s2 .tint2{position:absolute;inset:0;background:radial-gradient(90% 70% at 50% 50%,rgba(0,0,0,0) 40%,rgba(2,10,30,.6) 100%)}
+#ret{position:absolute;width:0;height:0;transition:left .7s cubic-bezier(.2,.8,.2,1),top .7s cubic-bezier(.2,.8,.2,1)}
+#ret i{position:absolute;left:-46px;top:-46px;width:92px;height:92px;border:2px solid #13e0b4;border-radius:50%;animation:rp 1.8s ease-out infinite}
+#ret b{position:absolute;left:-30px;top:-30px;width:60px;height:60px;border:1.5px dashed rgba(19,224,180,.9);border-radius:50%;animation:spin 8s linear infinite}
+#ret em{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:#13e0b4;box-shadow:0 0 14px #13e0b4}
+@keyframes rp{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.5);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}
+#card{position:absolute;transition:left .6s cubic-bezier(.2,.8,.2,1),opacity .3s;left:clamp(14px,6vw,86px);top:clamp(56px,13vh,120px);width:min(540px,calc(100% - 28px));padding:clamp(14px,2.4vh,26px) clamp(16px,2.4vw,30px);border-radius:14px;background:rgba(8,40,110,.62);border:1px solid rgba(140,190,255,.32);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 50px rgba(0,10,40,.45);font-family:ui-monospace,"Cascadia Mono",Consolas,monospace}
+#card .k{color:#bcd4ff;font-size:clamp(11px,1.5vh,14px);letter-spacing:.04em}#card .v{color:#27f0c0;font-weight:600}
+#card h3{font:700 clamp(20px,4.4vh,38px)/1.1 "Inter",system-ui,sans-serif;letter-spacing:-.01em;margin-bottom:clamp(6px,1.4vh,14px);color:#fff}
+#card h3 span{font-weight:400;color:#cfe0ff}
+#card .row{display:flex;gap:18px;flex-wrap:wrap;margin-top:6px}
+#card hr{border:0;border-top:1px solid rgba(160,200,255,.35);margin:clamp(8px,1.6vh,16px) 0}
+#ticks{display:flex;gap:3px;margin-top:6px}#ticks i{width:7px;height:clamp(16px,3vh,28px);background:#27f0c0;opacity:.9;border-radius:1px}#ticks i.off{opacity:.18}
+#card .big{font:600 clamp(26px,5vh,46px)/1 "Inter",system-ui,sans-serif;color:#fff}
+#card .tag{display:inline-block;margin-top:10px;font:600 10px/1 "Inter",system-ui,sans-serif;letter-spacing:.14em;padding:5px 8px;border-radius:99px;background:rgba(255,255,255,.12);color:#cfe0ff}
+#s3lbls{position:absolute;inset:0;pointer-events:none}
+/* UI chrome */
+#vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%,rgba(0,0,0,0) 45%,rgba(2,8,26,.55) 100%),linear-gradient(90deg,rgba(3,12,36,.55),rgba(3,12,36,0) 45%)}
+#scan{position:absolute;inset:0;pointer-events:none;opacity:.07;background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px)}
+#words{position:absolute;left:clamp(16px,3.2vw,44px);bottom:clamp(86px,17vh,150px);display:flex;flex-direction:column;gap:clamp(0px,.4vh,4px);z-index:5}
+#words button{background:none;border:0;padding:0;text-align:left;font:500 clamp(24px,5.6vh,56px)/1.12 "Inter",system-ui,sans-serif;letter-spacing:-.025em;color:rgba(255,255,255,.34);filter:blur(1.6px);transition:color .4s,filter .4s,transform .4s;transform-origin:left}
+#words button.on{color:#fff;filter:none;transform:translateX(6px)}
+#blurb{position:absolute;left:clamp(16px,3.2vw,44px);bottom:clamp(20px,4vh,40px);max-width:min(430px,70%);font-size:clamp(12px,1.9vh,15px);line-height:1.5;color:#cfe0ff;z-index:5;min-height:3em;transition:opacity .35s}
+#top{position:absolute;left:clamp(16px,3.2vw,44px);top:clamp(14px,2.6vh,26px);display:flex;gap:10px;align-items:center;z-index:5;font:600 12px/1 "Inter",system-ui,sans-serif;letter-spacing:.2em;color:#cfe0ff}
+#top i{width:8px;height:8px;border-radius:50%;background:#27f0c0;box-shadow:0 0 12px #27f0c0}
+#rail{position:absolute;right:clamp(12px,2vw,26px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:5}
+#rail button{width:10px;height:10px;padding:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.55);background:transparent;transition:.3s}
+#rail button.on{background:#27f0c0;border-color:#27f0c0;box-shadow:0 0 12px #27f0c0;transform:scale(1.3)}
+#hint{position:absolute;right:clamp(16px,3vw,44px);bottom:clamp(18px,3.4vh,34px);z-index:5;display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.12em;color:#bcd4ff;transition:opacity .5s}
+#hint .m{width:20px;height:32px;border:1.8px solid #bcd4ff;border-radius:11px;position:relative}#hint .m::after{content:"";position:absolute;left:50%;top:6px;width:3px;height:6px;margin-left:-1.5px;border-radius:2px;background:#bcd4ff;animation:wheel 1.6s ease-in-out infinite}
+@keyframes wheel{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(10px)}}
+#chip{position:absolute;z-index:4;font:600 11px/1.5 ui-monospace,Consolas,monospace;letter-spacing:.08em;color:#27f0c0;text-shadow:0 0 10px rgba(39,240,192,.6);pointer-events:none;opacity:0}
+#load{position:absolute;inset:0;display:grid;place-items:center;color:#bcd4ff;background:#05204f;z-index:20;transition:opacity .7s;font-size:13px;letter-spacing:.14em}
+@media(max-width:640px){#rail{display:none}#hint span{display:none}}
+</style></head><body>
+<div id="scroller"></div>
+<div id="stage">
+ <canvas class="layer" id="c1"></canvas>
+ <div class="layer" id="s2"><div id="imgwrap"><img id="street" src="scroll/street-oculus.jpg" alt=""><div id="ret"><i></i><b></b><em></em></div></div><div class="tint"></div><div class="tint2"></div>
+  <div id="card"><h3 id="cT"></h3><div class="k">FAMILY: <span class="v" id="cF"></span></div><div class="k">DERIVED FROM: <span class="v">STREET-LEVEL IMAGERY + LIDAR</span></div><div class="k">LOCATION: <span class="v">40.7114°N, 74.0106°W</span> <span style="opacity:.6">(approx.)</span></div><hr>
+   <div class="row"><div><div class="k">OUTPUT</div><div class="big" style="font-size:clamp(15px,2.6vh,22px);line-height:1.25">Type · Position<br>Condition · Unique ID</div></div><div style="flex:1;min-width:140px"><div class="k">CONDITION</div><div id="ticks"></div><div class="k" style="margin-top:6px;opacity:.7">ASSESSED FROM IMAGERY</div></div></div><span class="tag">SAMPLE INSIGHT · ILLUSTRATIVE</span></div>
+ </div>
+ <canvas class="layer" id="c3"></canvas>
+ <canvas class="layer" id="c4"></canvas>
+ <div id="vig"></div><div id="scan"></div>
+ <div id="top"><i></i>CYCLOMEDIA × NEW YORK CITY</div>
+ <div id="chip"></div>
+ <div id="words"><button data-i="0">Capture.</button><button data-i="1">Insight.</button><button data-i="2">Intelligence.</button><button data-i="3">Vision.</button></div>
+ <div id="blurb"></div>
+ <div id="rail"><button data-i="0" aria-label="Capture"></button><button data-i="1" aria-label="Insight"></button><button data-i="2" aria-label="Intelligence"></button><button data-i="3" aria-label="Vision"></button></div>
+ <div id="hint"><div class="m"></div><span>SCROLL TO EXPLORE</span></div>
+ <div id="load">LOADING NEW YORK…</div>
+</div>
+<script>
+// Params: ?mode=auto (self-playing loop, no scroll)  &p=0.6 (freeze at a position, 0-1)
+const Q=new URLSearchParams(location.search),$=id=>document.getElementById(id);
+const AUTO=Q.get('mode')==='auto',FIX=Q.get('p')!==null?+Q.get('p'):null;
+if(AUTO||FIX!==null){document.documentElement.style.overflow='hidden';$('scroller').style.height='100vh'}
+const BL=['We capture New York in unmatched detail, every avenue, every block, every borough, turning reality into data.','Street-level imagery and LiDAR become structured, measurable insights: signals, crosswalks, curbs and more.','One shared, objective view of the city’s assets, ready for every department that depends on them.','From a single street to five boroughs: 1.8M+ street-level images captured in 2026.'];
+const RANGES=[[0,.27],[.25,.52],[.5,.77],[.75,1]];
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,cl=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),sm=(a,b,x)=>{const t=cl((x-a)/(b-a));return t*t*(3-2*t)};
+const R=6378137,MX=lon=>R*lon*Math.PI/180,MY=lat=>R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360)),IX=x=>x/R*180/Math.PI,IY=y=>(2*Math.atan(Math.exp(y/R))-Math.PI/2)*180/Math.PI;
+let W,H,DPR,meta,N,X,Y,Cn,WX,WY,ready=false;
+const c1=$('c1'),c3=$('c3'),c4=$('c4'),g1=c1.getContext('2d'),g3=c3.getContext('2d'),g4=c4.getContext('2d');
+let off4=null;
+/* ---------- layout ---------- */
+function resize(){if($('imgwrap'))$('imgwrap')._g=null;DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;for(const c of[c1,c3,c4]){c.width=Math.round(W*DPR);c.height=Math.round(H*DPR)}if(ready)buildOff4()}
+/* ---------- data ---------- */
+Promise.all([fetch('data/glow2026.json').then(r=>r.json()),fetch('data/glow2026.bin').then(r=>r.arrayBuffer())]).then(([m,buf])=>{meta=m;N=m.count;X=new Int32Array(buf,0,N);Y=new Int32Array(buf,N*4,N);Cn=new Uint16Array(buf,N*8,N);WX=new Float32Array(N);WY=new Float32Array(N);for(let i=0;i<N;i++){WX[i]=X[i]*m.cell;WY[i]=Y[i]*m.cell}ready=true;resize();$('load').style.opacity=0;setTimeout(()=>$('load').remove(),700)});
+addEventListener('resize',resize);resize();
+/* ---------- scene 1: CAPTURE (real 2026 capture trails along 7th Ave, Midtown Manhattan) ---------- */
+const P0=[MX(-73.9855),MY(40.7580)],PHI=29*Math.PI/180,DV=[Math.sin(PHI),Math.cos(PHI)],RV=[Math.cos(PHI),-Math.sin(PHI)],TRAVEL=620;
+function car(g,cx,cy,len,t){const w=len*.44,x=cx-w/2,y=cy-len/2;g.save();g.shadowColor='rgba(0,10,40,.55)';g.shadowBlur=len*.35;g.shadowOffsetX=len*.12;g.shadowOffsetY=len*.1;
+ g.fillStyle='#e8eef8';rr(g,x,y,w,len,w*.28);g.fill();g.shadowColor='transparent';
+ g.fillStyle='#1a2a44';rr(g,x+w*.12,y+len*.14,w*.76,len*.2,w*.14);g.fill();rr(g,x+w*.12,y+len*.66,w*.76,len*.14,w*.12);g.fill();
+ g.save();g.beginPath();rr(g,x+w*.1,y+len*.36,w*.8,len*.28,w*.1);g.clip();g.fillStyle='#f4f7fc';g.fillRect(x,y,w,len);g.fillStyle='#d6322c';const sh=len*.075;for(let k=-6;k<10;k++){g.beginPath();g.moveTo(x,y+len*.36+k*sh*2);g.lineTo(cx,y+len*.36+k*sh*2-sh*1.2);g.lineTo(x+w,y+len*.36+k*sh*2);g.lineTo(x+w,y+len*.36+k*sh*2+sh);g.lineTo(cx,y+len*.36+k*sh*2-sh*.2);g.lineTo(x,y+len*.36+k*sh*2+sh);g.fill()}g.restore();
+ g.fillStyle='#8fc3ff';g.beginPath();g.arc(cx,cy+len*.08,w*.14,0,7);g.fill();g.restore()}
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function scene1(t,time){const g=g1;g.setTransform(DPR,0,0,DPR,0,0);const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#082a6d');bg.addColorStop(1,'#041a47');g.fillStyle=bg;g.fillRect(0,0,W,H);
+ const s=H/1050,cxw=P0[0]+DV[0]*(-TRAVEL/2+TRAVEL*t),cyw=P0[1]+DV[1]*(-TRAVEL/2+TRAVEL*t),VX=W*.5,VY=H*.64;
+ if(ready){const cs=meta.cell*1.04,dp=Math.max(1.6,H/420)/s;g.save();
+  const A=s*RV[0],C=s*RV[1],B=-s*DV[0],D=-s*DV[1];g.setTransform(DPR*A,DPR*B,DPR*C,DPR*D,DPR*(VX-(A*cxw+C*cyw)),DPR*(VY-(B*cxw+D*cyw)));g.globalCompositeOperation='lighter';
+  for(let i=0;i<N;i++){const vx=WX[i]-cxw,vy=WY[i]-cyw,a=vx*DV[0]+vy*DV[1],b=vx*RV[0]+vy*RV[1],sx=VX+b*s,sy=VY-a*s;if(sx<-40||sx>W+40||sy<-40||sy>H+40)continue;
+   let al,cr,cg,cb;if(a<=18){const k=Math.exp(a/340);al=.22+.34*k;cr=60+110*k;cg=170+70*k;cb=255}else{const k=Math.exp(-(a-18)/420);al=.07+.1*k;cr=40;cg=110;cb=235}
+   g.fillStyle='rgba('+(cr|0)+','+(cg|0)+','+(cb|0)+','+(al*1.25)+')';g.beginPath();g.arc(WX[i],WY[i],cs*.3,0,6.3);g.fill();
+   if(a<=18){g.fillStyle='rgba(190,245,255,'+(.35+.5*Math.exp(a/200))+')';for(let q=0;q<3;q++){g.fillRect(WX[i]+(hsh(i,q)-.5)*cs,WY[i]+(hsh(q,i+77)-.5)*cs,dp,dp)}}}
+  g.restore()}
+ // light columns + lidar pulses from the vehicle
+ g.fillStyle='rgba(120,190,255,.10)';for(const f of[.28,.405,.52]){g.fillRect(W*f,0,2,H)}
+ for(let k=0;k<3;k++){const ph=((time*.00045+k/3)%1),r=ph*H*.55;g.strokeStyle=`rgba(80,230,255,${.5*(1-ph)})`;g.lineWidth=2;g.beginPath();g.arc(VX,VY,r,0,7);g.stroke()}
+ car(g,VX,VY,H*.12,t);
+ // readout chip
+ const lat=IY(cyw),lon=IX(cxw),ch=$('chip');ch.style.opacity=1;ch.style.left=Math.round(VX+H*.1)+'px';ch.style.top=Math.round(VY-H*.04)+'px';ch.innerHTML=`CAPTURING · SEVENTH AVE, MANHATTAN<br>${lat.toFixed(5)}°N  ${Math.abs(lon).toFixed(5)}°W`}
+/* ---------- scene 2: INSIGHT (hotspots on a real street-level capture) ---------- */
+const ASSETS=[{n:'Traffic Light',f:'Traffic Control',x:.455,y:.245,c:18},{n:'Streetlight',f:'Traffic Control',x:.155,y:.26,c:16},{n:'Crosswalk',f:'Pedestrian Safety',x:.31,y:.9,c:19},{n:'Traffic Signs',f:'Road Safety',x:.755,y:.69,c:15}];
+const tk=$('ticks');for(let i=0;i<20;i++)tk.appendChild(document.createElement('i'));let curA=-1;
+function setAsset(i){if(i===curA)return;curA=i;const a=ASSETS[i];$('cT').innerHTML=a.n.toUpperCase()+' <span>· DETECTED</span>';$('cF').textContent=a.f.toUpperCase();[...tk.children].forEach((e,k)=>e.classList.toggle('off',k>=a.c));$('ret').style.left=(a.x*100)+'%';$('ret').style.top=(a.y*100)+'%';placeCard()}
+function placeCard(){const a=ASSETS[Math.max(0,curA)],iw=$('imgwrap');if(!iw._g)fit2();const sx=iw._g.l+a.x*iw._g.w,cw=$('card').offsetWidth||400;$('card').style.left=(sx<W*.5?Math.max(14,W-cw-Math.max(14,W*.06)):Math.max(14,W*.06))+'px'}
+function fit2(){const sc=Math.max(W/1920,H/1080),w=1920*sc,h=1080*sc,iw=$('imgwrap');iw.style.width=w+'px';iw.style.height=h+'px';iw.style.left=(W-w)/2+'px';iw.style.top=(H-h)/2+'px';iw._g={w,h,l:(W-w)/2}}
+function scene2(t){const iw=$('imgwrap');if(!iw._g)fit2();iw.style.transform=`scale(${1.02+t*.07})`;{const g=iw._g,top=(H-g.h)/2,vis=ASSETS.map((a,i)=>i).filter(i=>{const a=ASSETS[i],x=g.l+a.x*g.w,y=top+a.y*g.h;return x>W*.08&&x<W*.92&&y>H*.12&&y<H*.9});const L=vis.length?vis:[0];setAsset(L[Math.min(L.length-1,Math.floor(t*L.length*.999))])}$('card').style.opacity=sm(0,.1,t)}
+/* ---------- scene 3: INTELLIGENCE (procedural Midtown intersection, top-down) ---------- */
+const AV=420,ST=250,AVW=112,STW=72;let seedv=7;const rnd=()=>{seedv|=0;seedv=seedv+0x6D2B79F5|0;let t=Math.imul(seedv^seedv>>>15,1|seedv);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const hsh=(a,b)=>{let h=Math.imul(a|0,374761393)+Math.imul(b|0,668265263);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296};
+const MARK=[{x:-120,y:-70,l:'TRAFFIC LIGHT',f:'Traffic Control',dx:-1},{x:-8,y:-58,l:'CROSSWALK',f:'Pedestrian Safety',dx:1},{x:150,y:92,l:'FIRE HYDRANT',f:'Infrastructure',dx:1},{x:-150,y:96,l:'MANHOLE',f:'Infrastructure',dx:-1},{x:270,y:-64,l:'TRAFFIC SIGN',f:'Road Safety',dx:1}];
+const CARS=Array.from({length:16},(_,i)=>({lane:i%4,ph:rnd(),v:.03+rnd()*.05,hor:i>=8}));
+function scene3(t,time){const g=g3;g.setTransform(DPR,0,0,DPR,0,0);const s=(H/880)*(1+t*.22),cx=W*.56,cy=H*.52,wx=0,wy=-t*120;
+ g.fillStyle='#07276a';g.fillRect(0,0,W,H);
+ const tx=x=>cx+(x-wx)*s,ty=y=>cy+(y-wy)*s;
+ const i0=Math.floor((wx-cx/s)/AV)-1,i1=Math.ceil((wx+(W-cx)/s)/AV)+1,j0=Math.floor((wy-cy/s)/ST)-1,j1=Math.ceil((wy+(H-cy)/s)/ST)+1;
+ for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){ // block between avenues i..i+1 and streets j..j+1
+  const bx0=i*AV+AVW/2+16,bx1=(i+1)*AV-AVW/2-16,by0=j*ST+STW/2+14,by1=(j+1)*ST-STW/2-14;g.fillStyle='#103f92';g.fillRect(tx(bx0-10),ty(by0-10),(bx1-bx0+20)*s,(by1-by0+20)*s);
+  const nb=2+Math.floor(hsh(i,j)*2);for(let k=0;k<nb;k++){const bw=(bx1-bx0)/nb,x=bx0+k*bw+3,h=hsh(i*7+k,j*3);g.fillStyle=`rgb(${14+h*14|0},${52+h*30|0},${126+h*40|0})`;g.fillRect(tx(x),ty(by0),(bw-6)*s,(by1-by0)*s);g.strokeStyle='rgba(110,170,255,.55)';g.lineWidth=1.2;g.strokeRect(tx(x),ty(by0),(bw-6)*s,(by1-by0)*s);
+   g.fillStyle='rgba(120,180,255,.12)';g.fillRect(tx(x+6),ty(by0+6),(bw-18)*s,(by1-by0-12)*s)}}
+ // roads
+ g.fillStyle='#051a45';for(let i=i0;i<=i1;i++)g.fillRect(tx(i*AV-AVW/2),0,AVW*s,H);for(let j=j0;j<=j1;j++)g.fillRect(0,ty(j*ST-STW/2),W,STW*s);
+ // Broadway-style diagonal
+ g.save();g.translate(tx(0),ty(0));g.rotate(-PHI);g.fillStyle='#051a45';g.fillRect(-W*2,-26*s,W*4,52*s);g.strokeStyle='rgba(150,200,255,.5)';g.lineWidth=1.5;g.setLineDash([14*s,12*s]);g.beginPath();g.moveTo(-W*2,0);g.lineTo(W*2,0);g.stroke();g.restore();
+ // lane dashes + crosswalks
+ g.setLineDash([16*s,14*s]);g.strokeStyle='rgba(170,210,255,.5)';g.lineWidth=2;for(let i=i0;i<=i1;i++){g.beginPath();g.moveTo(tx(i*AV),0);g.lineTo(tx(i*AV),H);g.stroke()}for(let j=j0;j<=j1;j++){g.beginPath();g.moveTo(0,ty(j*ST));g.lineTo(W,ty(j*ST));g.stroke()}g.setLineDash([]);
+ g.fillStyle='rgba(210,230,255,.8)';for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){const x=i*AV,y=j*ST;for(let k=-4;k<=4;k++){g.fillRect(tx(x+k*11-3),ty(y-STW/2-22),6*s,16*s);g.fillRect(tx(x+k*11-3),ty(y+STW/2+6),6*s,16*s)}for(let k=-3;k<=3;k++){g.fillRect(tx(x-AVW/2-22),ty(y+k*10-3),16*s,6*s);g.fillRect(tx(x+AVW/2+6),ty(y+k*10-3),16*s,6*s)}}
+ // trees
+ for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){for(let k=0;k<5;k++){const x=i*AV+AVW/2+8,y=j*ST+STW/2+30+k*40;g.fillStyle='rgba(30,170,150,.55)';g.beginPath();g.arc(tx(x),ty(y),9*s,0,7);g.fill()}}
+ // cars
+ for(const c of CARS){const p=((c.ph+time*.00001*c.v*1000)%1+1)%1;let x,y,w,h;if(!c.hor){const lx=(c.lane%2?1:-1)*(AVW*.24);x=lx;y=wy-cy/s+p*(H/s+80)*(c.lane%2?1:-1)+(c.lane%2?0:H/s+80)-0;h=22;w=11}else{x=wx-cx/s+p*(W/s+80);y=(c.lane%2?1:-1)*(STW*.2);w=22;h=11}
+  g.fillStyle='rgba(235,245,255,.85)';g.fillRect(tx(x)-w*s/2,ty(y)-h*s/2,w*s,h*s)}
+ // markers
+ const n=MARK.length;for(let k=0;k<n;k++){const m=MARK[k],a=sm(k/n*.8,k/n*.8+.14,t);if(a<=0)continue;const x=tx(m.x),y=ty(m.y),p=(time*.0011+k*.7)%2.2;
+  g.globalAlpha=a;g.strokeStyle='#27f0c0';g.lineWidth=2.4;g.beginPath();g.arc(x,y,12*s*.55+3,0,7);g.stroke();g.setLineDash([4,5]);g.beginPath();g.arc(x,y,21*s*.55+4,time*.002,time*.002+5);g.stroke();g.setLineDash([]);g.fillStyle='#27f0c0';g.beginPath();g.arc(x,y,4,0,7);g.fill();
+  g.strokeStyle=`rgba(39,240,192,${.5*(1-p/2.2)})`;g.beginPath();g.arc(x,y,12+p*22,0,7);g.stroke();
+  g.font=`500 ${Math.max(12,H*.026)|0}px Inter,system-ui,sans-serif`;const tw=Math.max(g.measureText(m.l).width,g.measureText(m.f.toUpperCase()+'  ·  40.7580°N 73.9855°W').width*.78);let dxn=m.dx;if(dxn>0&&x+clamp1(W*.12)+8+tw>W-12)dxn=-1;if(dxn<0&&x-clamp1(W*.12)-8-tw<12)dxn=1;const L=dxn*clamp1(W*.12),ex=x+L,ey=y+(m.y>0?40:-26),mdx=dxn;g.strokeStyle='rgba(39,240,192,.8)';g.lineWidth=1.4;g.beginPath();g.moveTo(x,y);g.lineTo(x+L*.35,ey);g.lineTo(ex,ey);g.stroke();
+  g.textAlign=mdx>0?'left':'right';g.fillStyle='#e7f0ff';g.font=`500 ${Math.max(12,H*.026)|0}px Inter,system-ui,sans-serif`;g.fillText(m.l,ex+mdx*8,ey-6);g.fillStyle='#27f0c0';g.font=`600 ${Math.max(9,H*.016)|0}px ui-monospace,Consolas,monospace`;
+  const lat=40.7580-(m.y/111000)*(1/1.0),lon=-73.9855+m.x/84300;g.fillText(`${m.f.toUpperCase()}  ·  ${lat.toFixed(4)}°N ${Math.abs(lon).toFixed(4)}°W`,ex+m.dx*8,ey+Math.max(13,H*.025));g.globalAlpha=1}
+ g.textAlign='left'}
+const clamp1=v=>Math.min(v,170);
+/* ---------- scene 4: VISION (whole-city coverage) ---------- */
+function buildOff4(){if(!ready)return;off4=document.createElement('canvas');off4.width=Math.round(W*DPR);off4.height=Math.round(H*DPR);const g=off4.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);
+ let a=1e12,b=-1e12,c=1e12,e=-1e12;for(let i=0;i<N;i+=7){a=Math.min(a,WX[i]);b=Math.max(b,WX[i]);c=Math.min(c,WY[i]);e=Math.max(e,WY[i])}
+ const sc=Math.min(W*.58/(b-a),H*.78/(e-c)),mx=(a+b)/2,my=(c+e)/2,ox=W*.6,oy=H*.5;off4.sc=sc;off4.ox=ox;off4.oy=oy;off4.b={a,b,c,e,mx,my};off4.top=oy-(e-my)*sc;off4.bot=oy+(my-c)*sc;
+ g.globalCompositeOperation='lighter';const px=Math.max(1.3,meta.cell*sc*.85),cov=Math.min(1,meta.cell*sc*.85/1.3);for(let i=0;i<N;i++){const x=ox+(WX[i]-mx)*sc,y=oy-(WY[i]-my)*sc,n2=Cn[i];g.fillStyle=`rgba(${40+Math.min(80,n2*12)|0},${150+Math.min(70,n2*10)|0},255,${(Math.min(.5,.1+n2*.045)*(.28+.72*cov))})`;g.fillRect(x-px/2,y-px/2,px,px)}}
+const BORO=[['MANHATTAN',-73.97,40.80],['BROOKLYN',-73.93,40.62],['QUEENS',-73.78,40.72],['THE BRONX',-73.86,40.89],['STATEN ISLAND',-74.18,40.56]];
+function scene4(t,time){const g=g4;g.setTransform(DPR,0,0,DPR,0,0);const bg=g.createRadialGradient(W*.6,H*.5,0,W*.6,H*.5,Math.max(W,H)*.7);bg.addColorStop(0,'#0a3a8c');bg.addColorStop(1,'#031236');g.fillStyle=bg;g.fillRect(0,0,W,H);
+ if(!off4)return;const k=ease(cl(t*1.6)),cut=off4.top+(off4.bot-off4.top)*(1-k);
+ // HUD ring
+ const rcx=W*.6,rcy=H*.5,rad=Math.min(W*.34,H*.46);g.strokeStyle='rgba(130,190,255,.35)';g.lineWidth=1.4;g.beginPath();g.arc(rcx,rcy,rad,0,7);g.stroke();g.beginPath();g.arc(rcx,rcy,rad*1.12,0,7);g.setLineDash([2,8]);g.stroke();g.setLineDash([]);
+ for(let d=0;d<360;d+=3){const an=(d+time*.004)*Math.PI/180,l=d%15?6:12;g.strokeStyle=`rgba(150,200,255,${d%15?.25:.55})`;g.beginPath();g.moveTo(rcx+Math.cos(an)*rad*1.12,rcy+Math.sin(an)*rad*1.12);g.lineTo(rcx+Math.cos(an)*(rad*1.12+l),rcy+Math.sin(an)*(rad*1.12+l));g.stroke()}
+ g.save();g.beginPath();g.rect(0,cut,W,H);g.clip();g.globalAlpha=1;g.drawImage(off4,0,0,W,H);g.restore();
+ if(k<.985){g.fillStyle='rgba(120,230,255,.9)';g.fillRect(0,cut,W,1.5)}
+ // pulse from Midtown
+ const cxm=off4.ox+(MX(-73.9855)-off4.b.mx)*off4.sc,cym=off4.oy-(MY(40.758)-off4.b.my)*off4.sc;for(let q=0;q<3;q++){const ph=((time*.0004+q/3)%1);g.strokeStyle=`rgba(39,240,192,${.7*(1-ph)})`;g.lineWidth=1.6;g.beginPath();g.arc(cxm,cym,6+ph*70,0,7);g.stroke()}g.fillStyle='#27f0c0';g.beginPath();g.arc(cxm,cym,4,0,7);g.fill();
+ // labels
+ g.font=`600 ${Math.max(10,H*.017)|0}px Inter,system-ui,sans-serif`;g.textAlign='center';BORO.forEach(([n,lo,la],i)=>{const x=off4.ox+(MX(lo)-off4.b.mx)*off4.sc,y=off4.oy-(MY(la)-off4.b.my)*off4.sc;g.fillStyle=`rgba(210,232,255,${sm(.25+i*.06,.4+i*.06,t)*.9})`;g.fillText(n,x,y)});g.textAlign='left';
+ // headline readout
+ const RX0=Math.max(16,W*.034),a=sm(.3,.6,t),cnt=Math.round(meta.total*ease(cl((t-.1)*1.5)));g.globalAlpha=a;g.fillStyle='#27f0c0';g.font=`500 ${Math.max(12,H*.022)|0}px Inter,system-ui,sans-serif`;g.fillText('Data coverage',RX0,H*.14);
+ g.fillStyle='#27f0c0';g.font=`600 ${Math.max(18,H*.04)|0}px ui-monospace,Consolas,monospace`;g.fillText('NEW YORK CITY',RX0,H*.14+Math.max(26,H*.05));g.fillStyle='#fff';g.font=`700 ${Math.max(26,H*.075)|0}px Inter,system-ui,sans-serif`;g.fillText(cnt.toLocaleString(),RX0,H*.14+Math.max(26,H*.05)+Math.max(40,H*.09));g.fillStyle='#bcd4ff';g.font=`500 ${Math.max(11,H*.02)|0}px Inter,system-ui,sans-serif`;g.fillText('street-level images captured in 2026',RX0,H*.14+Math.max(26,H*.05)+Math.max(40,H*.09)+Math.max(18,H*.035));g.globalAlpha=1}
+/* ---------- driver ---------- */
+let cur=-1,prog=0,target=0,t0=performance.now();
+function setWord(i){if(i===cur)return;cur=i;document.querySelectorAll('#words button').forEach((b,k)=>b.classList.toggle('on',k===i));document.querySelectorAll('#rail button').forEach((b,k)=>b.classList.toggle('on',k===i));$('blurb').style.opacity=0;setTimeout(()=>{$('blurb').textContent=BL[i];$('blurb').style.opacity=1},180);$('chip').style.opacity=i===0?1:0}
+function frame(now){
+ let p;if(FIX!==null)p=FIX;else if(AUTO)p=((now-t0)/36000)%1;else{const m=document.documentElement.scrollHeight-innerHeight;p=m>0?scrollY/m:0}
+ prog+=(p-prog)*(AUTO||FIX!==null?1:.14);const q=prog;
+ const op=RANGES.map(([a,b],i)=>{const inn=i===0?1:sm(a,a+.06,q),out=i===3?1:1-sm(b-.02,b+.04,q);return Math.max(0,Math.min(inn,out))});
+ const loc=RANGES.map(([a,b])=>cl((q-a)/(b-a)));
+ if(op[0]>.01){c1.style.opacity=op[0];scene1(loc[0],now)}else c1.style.opacity=0;
+ if(op[1]>.01){$('s2').style.opacity=op[1];scene2(loc[1])}else $('s2').style.opacity=0;
+ if(op[2]>.01){c3.style.opacity=op[2];scene3(loc[2],now)}else c3.style.opacity=0;
+ if(op[3]>.01){c4.style.opacity=op[3];scene4(loc[3],now)}else c4.style.opacity=0;
+ setWord(q<.26?0:q<.51?1:q<.76?2:3);$('hint').style.opacity=q<.03?1:0;if(op[0]<.4)$('chip').style.opacity=0;else $('chip').style.opacity=1;
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+function jump(i){const a=RANGES[i][0]+(i?.04:0);if(AUTO||FIX!==null)return;const m=document.documentElement.scrollHeight-innerHeight;scrollTo({top:a*m,behavior:'smooth'})}
+document.querySelectorAll('#words button,#rail button').forEach(b=>b.addEventListener('click',()=>jump(+b.dataset.i)));
+</script></body></html>
