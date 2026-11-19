@@ -78,7 +78,7 @@ function draw(){if(!dirty)return;dirty=false;
 
 /* ---- pair loading ---- */
 async function show(i){cur=i;const p=pairs[i];$('msg').style.display='none';
- let [a,b]=await Promise.all([load(p.a),load(p.b)]);let la=p.la||'Then',lb=p.lb||'Now';
+ let [a,b]=await Promise.all([load(p.a),load(p.b)]);let la=p.la||'2017',lb=p.lb||'2026';
  if(swap){[a,b]=[b,a];[la,lb]=[lb,la]}
  tex(0,a);tex(1,b);$('la').textContent=la;$('lb').textContent=lb;$('ct').textContent=p.title||'';$('cp').textContent=p.caption||'';$('cap').style.display=(p.title||p.caption)?'':'none';
  off=+(Q.get('off')??p.off??0);yaw=+(Q.get('yaw')??p.yaw??0);pitch=+(Q.get('pitch')??p.pitch??5);fov=+(Q.get('fov')??p.fov??66);clampPitch();
