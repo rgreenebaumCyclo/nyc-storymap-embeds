@@ -31,7 +31,7 @@ h1{font-size:clamp(18px,3vw,28px);letter-spacing:-.02em;margin-top:2px;max-width
 </style></head><body>
 <canvas id="c"></canvas>
 <div class="hud"><div class="eyebrow" id="eyebrow">Street-level imagery coverage</div><h1 id="title">New York City</h1><div id="big">0</div><div id="sub">street-level images captured</div>
-<div id="stats"><div>Est. road miles<b id="smi">–</b></div><div>Newest capture<b id="syr">–</b></div></div><div id="view"><b id="vn">0</b> <span>images in view</span></div></div>
+<div id="stats"><div>Est. road miles<b id="smi">–</b></div><div>Newest capture<b id="syr">–</b></div></div><div id="asof" style="color:var(--mut);font-size:12px;margin-top:10px;opacity:.8"></div><div id="view"><b id="vn">0</b> <span>images in view</span></div></div>
 <div id="pend"><div><div id="rings"><div class="ring"></div><div class="ring"></div></div><h2 id="pt">Coverage scan pending</h2><p>This metro hasn't been scanned yet. Run the coverage scan and rebuild to light it up.</p></div></div>
 <div id="hint">Scroll to zoom · drag to pan</div>
 <div id="dock"><div class="grp" id="tabs"></div><div class="grp"><button class="btn" id="replay">↻ Replay</button><button class="btn" id="zin">＋</button><button class="btn" id="zout">－</button><button class="btn" id="fit">Reset</button></div></div>
@@ -68,8 +68,8 @@ async function select(id){
  [...$('tabs').children].forEach(b=>b.classList.toggle('on',b.dataset.id===id));
  $('title').textContent=Q.get('title')||m.name;
  const pending=m.status!=='ready';$('pend').classList.toggle('on',pending);
- if(pending){meta=null;render();$('big').textContent='—';$('smi').textContent='–';$('syr').textContent='–';$('sub').textContent='coverage scan pending';$('pt').textContent=m.name+' · scan pending';return}
- $('sub').textContent='street-level images from latest capture';$('syr').textContent=m.oldestUsed&&m.oldestUsed<m.newest?m.oldestUsed+'–'+m.newest:(m.newest||'–');
+ if(pending){meta=null;render();$('asof').textContent='';$('big').textContent='—';$('smi').textContent='–';$('syr').textContent='–';$('sub').textContent='coverage scan pending';$('pt').textContent=m.name+' · scan pending';return}
+ $('sub').textContent='street-level images from latest capture';{const d=m.asOf&&new Date(m.asOf+'T12:00:00');$('asof').textContent=d?'Data as of '+d.toLocaleDateString('en-US',{month:'long',year:'numeric'})+' · a snapshot, not live':''}$('syr').textContent=m.oldestUsed&&m.oldestUsed<m.newest?m.oldestUsed+'–'+m.newest:(m.newest||'–');
  const [j,buf]=await Promise.all([fetch('data/metro-'+id+'.json').then(r=>r.json()),fetch('data/metro-'+id+'.bin').then(r=>r.arrayBuffer())]);
  if(my_!==token)return;meta=j;N=j.count;X=new Int32Array(buf,0,N);Y=new Int32Array(buf,N*4,N);Cn=new Uint16Array(buf,N*8,N);
  let a=1e12,b=-1e12,c=1e12,e=-1e12;for(let i=0;i<N;i++){a=Math.min(a,X[i]);b=Math.max(b,X[i]);c=Math.min(c,Y[i]);e=Math.max(e,Y[i])}
