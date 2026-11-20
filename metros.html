@@ -27,7 +27,7 @@ h1{font-size:clamp(18px,3vw,28px);letter-spacing:-.02em;margin-top:2px;max-width
 #rings{position:relative;height:120px;margin-bottom:18px}#rings .ring{position:absolute;left:50%;top:0;margin:0 0 0 -60px}
 #hint{position:absolute;right:22px;top:24px;font-size:12px;color:var(--mut);pointer-events:none;transition:opacity .6s}
 #load{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);background:#041021;transition:opacity .6s}
-@media(max-width:640px){#hint{display:none}.btn{padding:0 10px;height:30px}#stats{gap:14px}#stats b{font-size:16px}}
+@media(max-width:640px){#dock{flex-direction:column;align-items:stretch;gap:6px}#tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}#tabs::-webkit-scrollbar{display:none}#tabs .btn{flex:none}#hint{display:none}.btn{padding:0 10px;height:30px}#stats{gap:14px}#stats b{font-size:16px}}
 </style></head><body>
 <canvas id="c"></canvas>
 <div class="hud"><div class="eyebrow" id="eyebrow">Street-level imagery coverage</div><h1 id="title">New York City</h1><div id="big">0</div><div id="sub">street-level images captured</div>
