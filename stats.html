@@ -14,10 +14,10 @@ body{display:flex;align-items:center;min-height:100%;background:linear-gradient(
 </style></head><body>
 <div id="grid"></div>
 <script>
-// Params: ?items=5.6M:Images captured in 2026;10,100+:Miles;5:Boroughs   (value:Label;value:Label)
+// Params: ?items=2.4M:Images captured since July;10,100+:Miles;5:Boroughs   (value:Label;value:Label)
 // Optional: &dur=1800 (ms)
 const Q=new URLSearchParams(location.search);
-const DEF='5.6M:Street-level images captured in 2026;10,100+:Miles of streets captured;5:Boroughs';
+const DEF='2.4M:Street-level images captured since July;10,100+:Miles of streets captured;5:Boroughs';
 const items=(Q.get('items')||DEF).split(';').map(s=>{const i=s.indexOf(':');return[s.slice(0,i),s.slice(i+1)]});
 const COLS=['#2f8cff','#ff7a2f','#13c4a8','#a78bfa','#f4c430'],dur=+(Q.get('dur')||1800);
 const grid=document.getElementById('grid');
