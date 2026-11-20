@@ -84,7 +84,7 @@ canvas.layer{display:block}
 const Q=new URLSearchParams(location.search),$=id=>document.getElementById(id);
 const AUTO=Q.get('mode')==='auto',FIX=Q.get('p')!==null?+Q.get('p'):null;
 if(AUTO||FIX!==null){document.documentElement.style.overflow='hidden';$('scroller').style.height='100vh'}
-const BL=['We capture New York in unmatched detail, every avenue, every block, every borough, turning reality into data.','Street-level imagery and LiDAR become structured, measurable insights: signals, crosswalks, curbs and more.','One shared, objective view of the city’s assets, ready for every department that depends on them.','From a single street to five boroughs: 1.8M+ street-level images captured in 2026.'];
+const BL=['We capture New York in unmatched detail, every avenue, every block, every borough, turning reality into data.','Street-level imagery and LiDAR become structured, measurable insights: signals, crosswalks, curbs and more.','One shared, objective view of the city’s assets, ready for every department that depends on them.','From a single street to five boroughs: 5.6M street-level images and 10,100+ miles captured in 2026.'];
 const RANGES=[[0,.27],[.25,.52],[.5,.77],[.75,1]];
 const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,cl=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),sm=(a,b,x)=>{const t=cl((x-a)/(b-a));return t*t*(3-2*t)};
 const R=6378137,MX=lon=>R*lon*Math.PI/180,MY=lat=>R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360)),IX=x=>x/R*180/Math.PI,IY=y=>(2*Math.atan(Math.exp(y/R))-Math.PI/2)*180/Math.PI;

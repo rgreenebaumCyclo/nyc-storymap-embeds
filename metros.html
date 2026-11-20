@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Metro Coverage Glow Map</title>
+<link rel="stylesheet" href="base.css">
+<style>
+#c{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none;background:radial-gradient(100% 80% at 50% 40%,#0a2442,#041021)}
+#c:active{cursor:grabbing}
+.hud{position:absolute;pointer-events:none;left:22px;top:20px;right:22px}
+h1{font-size:clamp(18px,3vw,28px);letter-spacing:-.02em;margin-top:2px;max-width:480px}
+#big{font-size:clamp(38px,7vw,76px);font-weight:700;letter-spacing:-.045em;font-variant-numeric:tabular-nums;line-height:1;margin-top:10px;background:linear-gradient(90deg,#fff,#7fd0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#sub{color:var(--mut);margin-top:4px}
+#stats{display:flex;gap:22px;margin-top:14px;flex-wrap:wrap}
+#stats div{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+#stats b{display:block;font-size:20px;letter-spacing:-.02em;text-transform:none;color:#fff;font-variant-numeric:tabular-nums}
+#view{margin-top:14px;display:inline-flex;gap:8px;align-items:baseline;padding:7px 14px;border-radius:99px;font-size:13px;color:#cfe6ff;background:rgba(8,26,46,.7);border:1px solid var(--line);opacity:0;transform:translateY(4px);transition:.3s}
+#view.on{opacity:1;transform:none}#view b{font-size:16px;font-variant-numeric:tabular-nums;color:#fff}
+#dock{position:absolute;left:16px;right:16px;bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.grp{display:flex;gap:6px;flex-wrap:wrap}
+.btn.on{background:var(--blue);border-color:transparent}
+.btn.pend{opacity:.5}.btn .dot{width:6px;height:6px;border-radius:50%;background:#7fd0ff;box-shadow:0 0 8px #7fd0ff}.btn.pend .dot{background:transparent;border:1px solid #8ea5bc;box-shadow:none}
+#pend{position:absolute;inset:0;display:none;place-items:center;text-align:center;pointer-events:none}
+#pend.on{display:grid}
+#pend .ring{width:120px;height:120px;margin:0 auto 18px;border-radius:50%;border:1px solid rgba(127,208,255,.5);animation:pulse 2.4s ease-out infinite}
+#pend .ring:nth-child(2){animation-delay:1.2s}
+@keyframes pulse{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+#pend h2{font-size:20px;letter-spacing:-.01em}#pend p{color:var(--mut);max-width:340px;margin:6px auto 0}
+#rings{position:relative;height:120px;margin-bottom:18px}#rings .ring{position:absolute;left:50%;top:0;margin:0 0 0 -60px}
+#hint{position:absolute;right:22px;top:24px;font-size:12px;color:var(--mut);pointer-events:none;transition:opacity .6s}
+#load{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);background:#041021;transition:opacity .6s}
+@media(max-width:640px){#hint{display:none}.btn{padding:0 10px;height:30px}#stats{gap:14px}#stats b{font-size:16px}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div class="hud"><div class="eyebrow" id="eyebrow">Street-level imagery coverage</div><h1 id="title">New York City</h1><div id="big">0</div><div id="sub">street-level images captured</div>
+<div id="stats"><div>Est. road miles<b id="smi">–</b></div><div>Newest capture<b id="syr">–</b></div></div><div id="view"><b id="vn">0</b> <span>images in view</span></div></div>
+<div id="pend"><div><div id="rings"><div class="ring"></div><div class="ring"></div></div><h2 id="pt">Coverage scan pending</h2><p>This metro hasn't been scanned yet. Run the coverage scan and rebuild to light it up.</p></div></div>
+<div id="hint">Scroll to zoom · drag to pan</div>
+<div id="dock"><div class="grp" id="tabs"></div><div class="grp"><button class="btn" id="replay">↻ Replay</button><button class="btn" id="zin">＋</button><button class="btn" id="zout">－</button><button class="btn" id="fit">Reset</button></div></div>
+<div id="load">Loading…</div>
+<script>
+// Params: ?metro=philadelphia&title=…&eyebrow=…&sweep=0&color=2f8cff&tabs=0 (hide tab buttons)&auto=1 (cycle metros)
+const Q=new URLSearchParams(location.search),$=id=>document.getElementById(id);
+if(Q.get('eyebrow'))$('eyebrow').textContent=Q.get('eyebrow');
+const cv=$('c'),g=cv.getContext('2d');let dk=1,W,H,DPR,meta,N,X,Y,Cn,fitS=1,sweep=1,raf,anim,B={x0:0,x1:1,y0:0,y1:1},M=[],cur=null,token=0;
+const R=6378137,mx=lon=>R*lon*Math.PI/180,my=lat=>R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
+const v={s:1,cx:0,cy:0};
+const rgb=(()=>{const c=(Q.get('color')||'2f8cff');return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)]})();
+const SX=x=>(x-v.cx)*v.s+W/2,SY=y=>H/2-(y-v.cy)*v.s;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR}
+function fit(){if(W<50||H<50)resize();const wide=W/H>1.3;fitS=Math.min((wide?W*.62:W)/(B.x1-B.x0),Math.max(120,H-(wide?70:190))/(B.y1-B.y0));v.s=fitS;v.cx=(B.x0+B.x1)/2-(wide?W*.09:0)/v.s;v.cy=(B.y0+B.y1)/2-(wide?0:H*.06)/v.s}
+let bl=document.createElement('canvas');
+function bloom(){const w=Math.max(8,cv.width>>2),h=Math.max(8,cv.height>>2);if(bl.width!==w||bl.height!==h){bl.width=w;bl.height=h}const b=bl.getContext('2d');b.clearRect(0,0,w,h);b.drawImage(cv,0,0,w,h);g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='lighter';g.globalAlpha=.5;g.filter='blur(7px)';g.drawImage(bl,0,0,cv.width,cv.height);g.restore()}
+function render(){
+ g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,W,H);if(!meta)return;g.globalCompositeOperation='lighter';
+ const C=meta.cell,px=Math.max(1.2,C*v.s*.9),yCut=B.y0+(B.y1-B.y0)*sweep,zoomK=Math.min(1,fitS/v.s*2.2),cover=Math.min(1,C*v.s*.9/1.2);let vis=0;
+ for(let i=0;i<N;i++){const wy=Y[i]*C;if(wy>yCut)continue;const x=SX(X[i]*C),y=SY(wy);if(x<-6||y<-6||x>W+6||y>H+6)continue;vis+=Cn[i];
+  const n=Cn[i]*dk,a=Math.min(.7,(.16+n*.06)*(.55+.45*zoomK)*(.3+.7*cover));g.fillStyle=`rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;g.fillRect(x-px/2,y-px/2,px,px);
+  if(n>3&&cover>.8){g.fillStyle=`rgba(190,235,255,${Math.min(.55,n*.04)})`;const q=px*.55;g.fillRect(x-q/2,y-q/2,q,q)}}
+ g.globalCompositeOperation='source-over';
+ if(sweep<1){const y=SY(yCut);const gr=g.createLinearGradient(0,y,0,y+90);gr.addColorStop(0,'rgba(127,208,255,.35)');gr.addColorStop(1,'rgba(127,208,255,0)');g.fillStyle=gr;g.fillRect(0,y,W,90);g.fillStyle='rgba(180,230,255,.9)';g.fillRect(0,y,W,1.5)}
+ const zoomed=v.s>fitS*1.5&&sweep>=1;$('view').classList.toggle('on',zoomed);if(zoomed)$('vn').textContent=vis.toLocaleString()
+}
+function go(to,ms=900){cancelAnimationFrame(anim);const f={...v},t0=performance.now();(function s(t){const k=Math.min(1,(t-t0)/ms),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+ v.s=f.s*Math.pow(to.s/f.s,e);v.cx=f.cx+(to.cx-f.cx)*e;v.cy=f.cy+(to.cy-f.cy)*e;render();if(k<1)anim=requestAnimationFrame(s)})(t0)}
+function replay(){cancelAnimationFrame(raf);if(!meta)return;fit();const t0=performance.now(),D=3200,tot=meta.total,mi=cur.miles||0;
+ (function f(t){const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3);sweep=Q.get('sweep')==='0'?1:e;$('big').textContent=Math.round(tot*e).toLocaleString();$('smi').textContent=Math.round(mi*e).toLocaleString();render();if(k<1)raf=requestAnimationFrame(f)})(t0)}
+async function select(id){
+ const m=M.find(x=>x.id===id);if(!m)return;cur=m;const my_=++token;cancelAnimationFrame(raf);cancelAnimationFrame(anim);
+ [...$('tabs').children].forEach(b=>b.classList.toggle('on',b.dataset.id===id));
+ $('title').textContent=Q.get('title')||m.name;
+ const pending=m.status!=='ready';$('pend').classList.toggle('on',pending);
+ if(pending){meta=null;render();$('big').textContent='—';$('smi').textContent='–';$('syr').textContent='–';$('sub').textContent='coverage scan pending';$('pt').textContent=m.name+' · scan pending';return}
+ $('sub').textContent='street-level images from latest capture';$('syr').textContent=m.newest||'–';
+ const [j,buf]=await Promise.all([fetch('data/metro-'+id+'.json').then(r=>r.json()),fetch('data/metro-'+id+'.bin').then(r=>r.arrayBuffer())]);
+ if(my_!==token)return;meta=j;N=j.count;X=new Int32Array(buf,0,N);Y=new Int32Array(buf,N*4,N);Cn=new Uint16Array(buf,N*8,N);
+ let a=1e12,b=-1e12,c=1e12,e=-1e12;for(let i=0;i<N;i++){a=Math.min(a,X[i]);b=Math.max(b,X[i]);c=Math.min(c,Y[i]);e=Math.max(e,Y[i])}
+ {const s=Array.from(Cn).sort((p,q)=>p-q),p80=s[Math.floor(s.length*.8)]||1;dk=Math.min(1,6/p80)} // normalise density so very dense metros don't blow out to white
+ B={x0:a*j.cell,x1:b*j.cell,y0:c*j.cell,y1:e*j.cell};replay()}
+fetch('data/metros.json').then(r=>r.json()).then(d=>{M=d.metros;resize();
+ if(Q.get('tabs')!=='0')M.forEach(m=>{const b=document.createElement('button');b.className='btn'+(m.status==='ready'?'':' pend');b.dataset.id=m.id;b.innerHTML='<span class="dot"></span>'+m.name.replace('Washington, ','').replace(' City','');b.onclick=()=>{clearInterval(auto);select(m.id)};$('tabs').appendChild(b)});
+ const first=Q.get('metro')||(M.find(m=>m.status==='ready')||M[0]).id;
+ select(first).then(()=>{$('load').style.opacity=0;setTimeout(()=>$('load').remove(),700);setTimeout(()=>$('hint').style.opacity=0,9000)});
+ if(Q.get('auto')==='1'){const ready=M.filter(m=>m.status==='ready');let i=Math.max(0,ready.findIndex(m=>m.id===first));var auto=setInterval(()=>{i=(i+1)%ready.length;select(ready[i].id)},9000)}
+});
+addEventListener('resize',()=>{if(!meta)return;const wasFit=Math.abs(v.s-fitS)<1e-12||fitS<=0;resize();fit0=1;if(wasFit)fit();render()});let fit0=0;
+let drag=null;cv.onpointerdown=e=>{cancelAnimationFrame(anim);drag={x:e.clientX,y:e.clientY,cx:v.cx,cy:v.cy};cv.setPointerCapture(e.pointerId)};
+cv.onpointermove=e=>{if(!drag)return;v.cx=drag.cx-(e.clientX-drag.x)/v.s;v.cy=drag.cy+(e.clientY-drag.y)/v.s;render()};cv.onpointerup=()=>drag=null;
+function zoom(f,px=W/2,py=H/2){if(!meta)return;const wx=(px-W/2)/v.s+v.cx,wy=v.cy-(py-H/2)/v.s,s=Math.max(fitS*.7,Math.min(.5,v.s*f));v.s=s;v.cx=wx-(px-W/2)/s;v.cy=wy+(py-H/2)/s;render()}
+cv.addEventListener('wheel',e=>{e.preventDefault();cancelAnimationFrame(anim);zoom(Math.exp(-e.deltaY*.0015),e.clientX,e.clientY)},{passive:false});
+$('zin').onclick=()=>zoom(1.7);$('zout').onclick=()=>zoom(1/1.7);
+$('fit').onclick=()=>{if(!meta)return;const s=v.s,cx=v.cx,cy=v.cy;fit();const t={...v};Object.assign(v,{s,cx,cy});go(t)};
+$('replay').onclick=replay;
+</script></body></html>

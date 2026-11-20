@@ -20,7 +20,7 @@ h1{font-size:clamp(18px,3vw,28px);letter-spacing:-.02em;margin-top:2px;max-width
 @media(max-width:640px){#hint{display:none}.btn{padding:0 10px}}
 </style></head><body>
 <canvas id="c"></canvas><div id="labs"></div>
-<div class="hud"><div class="eyebrow" id="eyebrow">Street-level imagery · 2026</div><h1 id="title">New York City, captured</h1><div id="big">0</div><div id="sub">street-level images captured in 2026</div><div id="view"><b id="vn">0</b> <span>images in view</span></div></div>
+<div class="hud"><div class="eyebrow" id="eyebrow">Street-level imagery · 2026</div><h1 id="title">New York City, captured</h1><div id="big">0</div><div id="sub">street-level images captured in 2026</div><div id="mi" style="color:var(--mut);font-size:13px;margin-top:2px"></div><div id="view"><b id="vn">0</b> <span>images in view</span></div></div>
 <div id="hint">Scroll to zoom · drag to pan</div>
 <div id="dock"><div class="grp" id="fly"></div><div class="grp"><button class="btn" id="replay">↻ Replay</button><button class="btn" id="zin">＋</button><button class="btn" id="zout">－</button><button class="btn" id="fit">Reset</button></div></div>
 <div id="load">Loading…</div>
@@ -28,7 +28,7 @@ h1{font-size:clamp(18px,3vw,28px);letter-spacing:-.02em;margin-top:2px;max-width
 // Params: ?title=…&eyebrow=…&sub=…&sweep=0&color=2f8cff&fly=0 (hide borough buttons)
 const Q=new URLSearchParams(location.search),$=id=>document.getElementById(id);
 if(Q.get('title'))$('title').textContent=Q.get('title');if(Q.get('eyebrow'))$('eyebrow').textContent=Q.get('eyebrow');if(Q.get('sub'))$('sub').textContent=Q.get('sub');
-const cv=$('c'),g=cv.getContext('2d');let W,H,DPR,meta,N,X,Y,Cn,fitS,sweep=1,raf,anim;
+let MI=0;fetch('data/metros.json').then(r=>r.json()).then(d=>{MI=(d.metros.find(m=>m.id==='nyc')||{}).miles||0}).catch(()=>{});const cv=$('c'),g=cv.getContext('2d');let W,H,DPR,meta,N,X,Y,Cn,fitS,sweep=1,raf,anim;
 const R=6378137,mx=lon=>R*lon*Math.PI/180,my=lat=>R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
 const v={s:1,cx:0,cy:0};let B={};
 const PLACES=[['Manhattan',-73.975,40.775,.04],['Brooklyn',-73.95,40.65,.032],['Queens',-73.82,40.715,.03],['The Bronx',-73.88,40.85,.04],['Staten Island',-74.15,40.58,.036]];
@@ -55,7 +55,7 @@ function go(to,ms=900){cancelAnimationFrame(anim);const f={...v},t0=performance.
  // zoom in log space so the move feels even
  v.s=f.s*Math.pow(to.s/f.s,e);v.cx=f.cx+(to.cx-f.cx)*e;v.cy=f.cy+(to.cy-f.cy)*e;render();if(k<1)anim=requestAnimationFrame(s)})(t0)}
 function replay(){cancelAnimationFrame(raf);fit();const t0=performance.now(),D=3600;
- (function f(t){const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3);sweep=Q.get('sweep')==='0'?1:e;$('big').textContent=Math.round(meta.total*e).toLocaleString();render();if(k<1)raf=requestAnimationFrame(f)})(t0)}
+ (function f(t){const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3);sweep=Q.get('sweep')==='0'?1:e;$('big').textContent=Math.round(meta.total*e).toLocaleString();if(MI&&!Q.get('sub'))$('mi').textContent='about '+Math.round(MI*e).toLocaleString()+' miles of streets';render();if(k<1)raf=requestAnimationFrame(f)})(t0)}
 Promise.all([fetch('data/'+(new URLSearchParams(location.search).get('data')||'glow2026')+'.json').then(r=>r.json()),fetch('data/'+(new URLSearchParams(location.search).get('data')||'glow2026')+'.bin').then(r=>r.arrayBuffer())]).then(([m,buf])=>{
  meta=m;N=m.count;X=new Int32Array(buf,0,N);Y=new Int32Array(buf,N*4,N);Cn=new Uint16Array(buf,N*8,N);
  let a=1e12,b=-1e12,c=1e12,e=-1e12;for(let i=0;i<N;i++){a=Math.min(a,X[i]);b=Math.max(b,X[i]);c=Math.min(c,Y[i]);e=Math.max(e,Y[i])}
