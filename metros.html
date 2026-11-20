@@ -69,7 +69,7 @@ async function select(id){
  $('title').textContent=Q.get('title')||m.name;
  const pending=m.status!=='ready';$('pend').classList.toggle('on',pending);
  if(pending){meta=null;render();$('big').textContent='—';$('smi').textContent='–';$('syr').textContent='–';$('sub').textContent='coverage scan pending';$('pt').textContent=m.name+' · scan pending';return}
- $('sub').textContent='street-level images from latest capture';$('syr').textContent=m.newest||'–';
+ $('sub').textContent='street-level images from latest capture';$('syr').textContent=m.oldestUsed&&m.oldestUsed<m.newest?m.oldestUsed+'–'+m.newest:(m.newest||'–');
  const [j,buf]=await Promise.all([fetch('data/metro-'+id+'.json').then(r=>r.json()),fetch('data/metro-'+id+'.bin').then(r=>r.arrayBuffer())]);
  if(my_!==token)return;meta=j;N=j.count;X=new Int32Array(buf,0,N);Y=new Int32Array(buf,N*4,N);Cn=new Uint16Array(buf,N*8,N);
  let a=1e12,b=-1e12,c=1e12,e=-1e12;for(let i=0;i<N;i++){a=Math.min(a,X[i]);b=Math.max(b,X[i]);c=Math.min(c,Y[i]);e=Math.max(e,Y[i])}
